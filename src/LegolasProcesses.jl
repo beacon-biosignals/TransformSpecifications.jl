@@ -15,4 +15,7 @@ export AbstractLegolasProcess, apply!, input_schema, output_schema, LegolasProce
        LegolasProcess, LegolasProcessChain, process_succeeded, identity_legolas_process,
        is_identity_process, AbstractProcessChainStep
 
+include("mermaid.jl")
+export mermaidify
+
 end
