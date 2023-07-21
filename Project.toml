@@ -4,7 +4,7 @@ authors = ["Beacon Biosignals, Inc"]
 version = "0.0.1"
 
 [compat]
-Aqua = "0.5"
+Aqua = "0.6"
 julia = "1.7.2"
 
 [extras]
