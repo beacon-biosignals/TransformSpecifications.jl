@@ -31,11 +31,10 @@ jobs:
         with:
           key: ${{ secrets.BEACONBUDDY_SSH_KEY }}
           registry: beacon-biosignals/BeaconRegistry
-      - uses: actions/cache@v2
+      - uses: julia-actions/cache@v1
         with:
-          path: ~/.julia/artifacts
-          key: ${{ runner.os }}-legolasprocesses-docs-artifacts-${{ hashFiles('**/Project.toml') }}
-          restore-keys: ${{ runner.os }}-legolasprocesses-docs-artifacts
+          cache-name: "${{ github.workflow }}-${{ github.job }}-${{ matrix.runs-on }}"
+          cache-compiled: true
       - name: Install dependencies
         run: |
           julia --project=docs/ -e 'using Pkg;
