@@ -1,0 +1,17 @@
+comment: off
+flag_management:
+  default_rules:
+    carryforward: true
+  individual_flags:
+    - name: SleepLab
+      paths:
+        - src/**
+    - name: SleepStageMLCore
+      paths:
+        - SomNetPipeline.jl/src/**
+    - name: SleepStageMLSchemas
+      paths:
+        - SleepStageMLSchemas.jl/src/**
+    - name: LegolasProcesses
+      paths:
+        - LegolasProcesses.jl/src/**
