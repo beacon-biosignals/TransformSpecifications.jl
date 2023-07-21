@@ -5,5 +5,5 @@ include("set_up_tests.jl")
         Aqua.test_all(LegolasProcesses; ambiguities=false)
     end
 
-    # include additional test files here
+    @testset "Processes" include("processes.jl")
 end
