@@ -10,10 +10,12 @@ using Legolas
 using Legolas: @schema, @version
 using OrderedCollections
 
+include("processes.jl")
 export AbstractLegolasProcess, apply!, input_schema, output_schema, LegolasProcessResult,
        LegolasProcess, LegolasProcessChain, process_succeeded, identity_legolas_process,
-       is_identity_process, AbstractProcessChainStep, mermaidify_chain
+       is_identity_process, AbstractProcessChainStep
 
-include("processes.jl")
+include("mermaid.jl")
+export mermaidify
 
 end
