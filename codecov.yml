@@ -1,8 +1,2 @@
 comment: off
-flag_management:
-  default_rules:
-    carryforward: true
-  individual_flags:
-    - name: LegolasProcesses
-      paths:
-        - src/**
+

@@ -64,7 +64,6 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: lcov.info
-          flags: LegolasProcesses
       # - name: Percy Upload
       #   uses: percy/exec-action@v0.3.1
       #   with:
