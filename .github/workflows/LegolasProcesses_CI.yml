@@ -5,10 +5,10 @@ on:
     branches:
       - main
     tags: ["*"]
-    paths: ["LegolasProcesses.jl/**", ".github/workflows/LegolasProcesses_CI.yml"]
+    paths: ["**", ".github/workflows/LegolasProcesses_CI.yml"]
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
-    paths: ["LegolasProcesses.jl/**",".github/workflows/LegolasProcesses_CI.yml"]
+    paths: ["**",".github/workflows/LegolasProcesses_CI.yml"]
 concurrency:
   # Skip intermediate builds: always.
   # Cancel intermediate builds: only if it is a pull request build.
@@ -33,10 +33,6 @@ jobs:
           - ubuntu-latest
         arch:
           - x64
-        threads:
-          - 1
-    env:
-      JULIA_NUM_THREADS: ${{ matrix.threads }}
     steps:
       - uses: actions/checkout@v2
         with:
@@ -44,7 +40,7 @@ jobs:
       # - uses: aws-actions/configure-aws-credentials@v1
       #   with:
       #     aws-region: us-east-2
-      #     role-to-assume: arn:aws:iam::185776040155:role/sleeplab-ci
+      #     role-to-assume: arn:aws:iam::185776040155:role/legolasprocesses-ci
       #     role-duration-seconds: 43200
       - uses: julia-actions/setup-julia@v1
         with:
@@ -61,11 +57,10 @@ jobs:
           restore-keys: ${{ runner.os }}-legolasprocesses-ci-artifacts
       - uses: julia-actions/julia-runtest@v1
         with:
-          project: 'LegolasProcesses.jl'
           annotate: true
       - uses: julia-actions/julia-processcoverage@v1
         with:
-          directories: 'LegolasProcesses.jl/src/'
+          directories: 'src/'
       - uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -74,6 +69,6 @@ jobs:
       # - name: Percy Upload
       #   uses: percy/exec-action@v0.3.1
       #   with:
-      #     custom-command: "npx @percy/cli upload ./LegolasProcesses.jl/test/test_images"
+      #     custom-command: "npx @percy/cli upload ./test/test_images"
       #   env:
       #     PERCY_TOKEN: ${{ secrets.PERCY_LEGOLASPROCESSES }}

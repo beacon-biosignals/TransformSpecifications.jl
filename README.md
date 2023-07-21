@@ -1,6 +1,6 @@
 # LegolasProcesses.jl
 
-For details, see the documentation: [![docs](https://img.shields.io/badge/docs-dev-blue.svg)](https://beacon-biosignals.github.io/SleepLab.jl/LegolasProcesses/dev)
+Structured processing elements via [Legolas](https://github.com/beacon-biosignals/Legolas.jl)-defined I/O schemas. For details, see the documentation: [![docs](https://img.shields.io/badge/docs-dev-blue.svg)](https://beacon-biosignals.github.io/LegolasProcesses.jl/dev)
 
 Delete this section after completing:
 - [ ] In [the top-level repo readme](../README.md), replace the new "TODO" with a short description of this package and the CODECOVTOKEN with the repo's codecov token

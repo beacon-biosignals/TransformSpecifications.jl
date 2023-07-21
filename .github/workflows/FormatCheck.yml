@@ -16,7 +16,7 @@ jobs:
     strategy:
       matrix:
         julia-version:
-          - '1.7'
+          - '1.8'
     steps:
       - uses: julia-actions/setup-julia@latest
         with:

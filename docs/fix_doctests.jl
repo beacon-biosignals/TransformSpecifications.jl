@@ -12,7 +12,7 @@ DocMeta.setdocmeta!(LegolasProcesses, :DocTestSetup, :(using LegolasProcesses);
 
 if get(ENV, "CI", "false") == "true" || success(`git diff --quiet`)
     if ismissing(get(ENV, "AWS_PROFILE", missing))
-        @warn """You may need to set `ENV["AWS_PROFILE"] = sleeplab-ci` in order to successfully run the doctests"""
+        @warn """You may need to set `ENV["AWS_PROFILE"] = legolasprocesses-ci` in order to successfully run the doctests"""
     end
     doctest(LegolasProcesses; fix=true)
 else

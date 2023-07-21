@@ -7,16 +7,16 @@ on:
       - main
     paths:
       - '.github/workflows/LegolasProcesses_docs.yml'
-      - 'LegolasProcesses.jl/docs/**'
-      - 'LegolasProcesses.jl/src/**'
-      - 'LegolasProcesses.jl/Project.toml'
+      - 'docs/**'
+      - 'src/**'
+      - 'Project.toml'
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - '.github/workflows/LegolasProcesses_docs.yml'
-      - 'LegolasProcesses.jl/docs/**'
-      - 'LegolasProcesses.jl/src/**'
-      - 'LegolasProcesses.jl/Project.toml'
+      - 'docs/**'
+      - 'src/**'
+      - 'Project.toml'
 jobs:
   Documentation:
     # Run on push's or non-draft PRs
@@ -41,9 +41,7 @@ jobs:
           julia --project=docs/ -e 'using Pkg;
               Pkg.develop(PackageSpec(path=pwd()));
               Pkg.instantiate()'
-        working-directory: LegolasProcesses.jl
       - run: julia --project=docs "docs/make.jl"
-        working-directory: LegolasProcesses.jl
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # For authentication with GitHub Actions token
           PYTHON: ""
@@ -53,4 +51,4 @@ jobs:
           owner="${GITHUB_REPOSITORY_OWNER}"
           repo="${GITHUB_REPOSITORY#*/}"
           pr="${{ github.event.number }}"
-          echo "https://${owner}.github.io/${repo}/LegolasProcesses/previews/PR${pr}/"
+          echo "https://${owner}.github.io/${repo}/previews/PR${pr}/"

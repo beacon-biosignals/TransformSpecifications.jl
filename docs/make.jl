@@ -7,7 +7,5 @@ makedocs(; modules=[LegolasProcesses],
          pages=["API Documentation" => "index.md"],
          strict=true)
 
-deploydocs(; repo="github.com/beacon-biosignals/SleepLab.jl.git", push_preview=true,
-           devbranch="main", dirname="LegolasProcesses",
-           versions=["stable" => "LegolasProcesses-v^", "LegolasProcesses-v#.#",
-                     "dev" => "dev"])
+deploydocs(; repo="github.com/beacon-biosignals/LegolasProcesses.jl.git", push_preview=true,
+           devbranch="main")
