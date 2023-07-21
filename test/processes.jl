@@ -1,4 +1,3 @@
-
 @schema "schema-a" SchemaA
 @version SchemaAV1 begin
     foo::String
@@ -28,6 +27,7 @@ end
     @test isempty(result.violations)
     @test isempty(result.warnings)
     @test process_succeeded(result)
+    @test typeof(result) == LegolasProcessResult{SchemaAV1}
 
     # ...when warnings present, process can still be "successful"
     result_with_warnings = LegolasProcessResult(record;
@@ -36,6 +36,7 @@ end
     @test result_with_warnings.record == result.record
     @test length(result_with_warnings.warnings) == 2
     @test process_succeeded(result)
+    @test typeof(result_with_warnings) == LegolasProcessResult{SchemaAV1}
 
     # ...when violations present, process is deemed to not have succeeded
     result_with_violations = LegolasProcessResult(;
@@ -44,6 +45,7 @@ end
     @test ismissing(result_with_violations.record)
     @test length(result_with_violations.violations) == 2
     @test !process_succeeded(result_with_violations)
+    @test typeof(result_with_violations) == LegolasProcessResult{Missing}
 
     # Passing in a single warning or violation auto-generates a vector of warnings/violations
     @test isequal(LegolasProcessResult(; warnings="Foo", record),
@@ -55,8 +57,9 @@ end
     @test o.violations == ["Bar"]
 
     # When violations are present, record state is undefined: can be missing or present despite violations
-    @test LegolasProcessResult(; violations="Foo") isa LegolasProcessResult
-    @test LegolasProcessResult(; violations="Foo", record) isa LegolasProcessResult
+    #TODO-decide: maybe we don't want to support this?? and they should always be missing??? discuss!
+    @test LegolasProcessResult(; violations="Foo") isa LegolasProcessResult{Missing}
+    @test LegolasProcessResult(; violations="Foo", record) isa LegolasProcessResult{SchemaAV1}
 
     # Struct is non-copying:
     record = SchemaAV1(; foo="whee")

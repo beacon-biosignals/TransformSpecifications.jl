@@ -93,25 +93,24 @@ LegolasProcessResult: Process failed
  :name  "woo"
 ```
 """
-#TODO-help: how do i get the type here to be `LegolasProcessResult{T}` with `record::Union{T,Missing}`?
-struct LegolasProcessResult
+struct LegolasProcessResult{T<:Union{Missing,<:Legolas.AbstractRecord}}
     warnings::Vector{String}
     violations::Vector{String}
-    record::Union{Legolas.AbstractRecord,Missing}
+    record::T
 
     function LegolasProcessResult(; warnings::Union{String,Vector{String}}=String[],
                                   violations::Union{String,Vector{String}}=String[],
-                                  record=missing)
+                                  record::Union{Missing,<:Legolas.AbstractRecord}=missing)
         if ismissing(record) && isempty(violations)
             throw(ArgumentError("Invalid args: either `record` must be non-missing OR `violations` must be non-empty."))
         end
         warnings isa Vector{String} || (warnings = [warnings])
         violations isa Vector{String} || (violations = [violations])
-        return new(warnings, violations, record)
+        return new{typeof(record)}(warnings, violations, record)
     end
 end
 
-LegolasProcessResult(record; kwargs...) = LegolasProcessResult(; record, kwargs...)
+LegolasProcessResult(record; warnings=String[], violations=String[]) = LegolasProcessResult(; record, warnings, violations)
 
 """
     process_succeeded(result::LegolasProcessResult) -> Bool
@@ -196,6 +195,14 @@ Base.@kwdef struct LegolasProcess <: AbstractLegolasProcess
     output_schema::Type{<:Legolas.AbstractRecord}
     apply_fn::Function  # TODO-help: how to validate the function signature (in type or on construction), to ensure takes in input schema as specified, spits out output schema?
 end
+#= TODO-decide: should we make this parametric on input and output schema?? could be kinda cool...
+# e.g.
+Base.@kwdef struct LegolasProcess{T,U} where {T<:Type{<:Legolas.AbstractRecord}, U<:Type{<:Legolas.AbstractRecord}} <: AbstractLegolasProcess
+    input_schema::T
+    output_schema::U
+    apply_fn::Function
+end
+=#
 
 #TODO-decide: do we want to enforce `input_record` type? how, if we wanted to?
 """
