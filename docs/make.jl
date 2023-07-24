@@ -7,5 +7,6 @@ makedocs(; modules=[TransformSpecifications],
          pages=["API Documentation" => "index.md"],
          strict=true)
 
-deploydocs(; repo="github.com/beacon-biosignals/TransformSpecifications.jl.git", push_preview=true,
+deploydocs(; repo="github.com/beacon-biosignals/TransformSpecifications.jl.git",
+           push_preview=true,
            devbranch="main")
