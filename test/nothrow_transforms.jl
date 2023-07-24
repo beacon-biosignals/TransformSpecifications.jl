@@ -102,6 +102,24 @@ end
                   NoThrowTransform(SchemaAV1, SchemaBV1, fn))
 end
 
+@testset "`transform` vs `transform!`" begin
+    ntt = NoThrowTransform(SchemaAV1, SchemaAV1,
+                           r -> NoThrowResult(push!(r.list, 122)))
+    input_a = SchemaAV1(foo="a")
+
+    # Mutating
+    input = SchemaAV1(; foo="rabbit")
+    @test isequal(input.list, [33])
+    result = transform!(ntt, input)
+    @test isequal(input.list, [33, 122])
+
+    # Non-mutating
+    input = SchemaAV1(; foo="rabbit")
+    @test isequal(input.list, [33])
+    result = transform(ntt, input)
+    @test isequal(input.list, [33])
+end
+
 @testset "`identity_no_throw_transform`" begin
     test_transform_fn(_) = NoThrowResult(SchemaBV1(; name="yay"))
     ntt_a = NoThrowTransform(SchemaAV1, SchemaBV1, test_transform_fn)

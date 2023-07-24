@@ -16,23 +16,35 @@ abstract type AbstractTransformSpecification end
 # TODO-future: add/document mutation of transform input
 
 """
-    transform!(transform_spec::AbstractTransformSpecification, input_record)
+    transform!(ts::AbstractTransformSpecification, input)
 
-Return result of applying `transform_spec` to an `input` of type `input_specification(transform_spec)`,
-where result is an `output_specification(transform_spec)`.
+Return result of applying `ts` to an `input` of type `input_specification(ts)`,
+where result is an `output_specification(ts)`. May mutate `input`.
+
+See also: [`transform`](@ref)
 """
 function transform! end
 
 """
-    input_specification(transform_spec::AbstractTransformSpecification)
+    transform(ts::AbstractTransformSpecification, input)
 
-Return specification accepted as input to `transform_spec`.
+Return result of applying `ts` to an `input` of type `input_specification(ts)`,
+where result is an `output_specification(ts)`. May not mutate `input`.
+
+See also: [`transform!`](@ref)
+"""
+transform(ts::AbstractTransformSpecification, input) = transform!(ts, deepcopy(input))
+
+"""
+    input_specification(ts::AbstractTransformSpecification)
+
+Return specification accepted as input to `ts`.
 """
 function input_specification end
 
 """
-    output_specification(transform_spec::AbstractTransformSpecification)
+    output_specification(ts::AbstractTransformSpecification)
 
-Return specification of return value of `transform_spec`.
+Return specification of return value of `ts`.
 """
 function output_specification end
