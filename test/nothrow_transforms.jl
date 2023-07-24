@@ -29,7 +29,7 @@ end
     @test nothrow_succeeded(result)
     @test typeof(result) == NoThrowResult{SchemaAV1}
 
-    # ...when warnings present, process can still be "successful"
+    # ...when warnings present, ntt can still be "successful"
     result_with_warnings = NoThrowResult(record; warnings=["look out",
                                                            "LOOK OUT!"])
     @test result_with_warnings.result == result.result
@@ -37,7 +37,7 @@ end
     @test nothrow_succeeded(result)
     @test typeof(result_with_warnings) == NoThrowResult{SchemaAV1}
 
-    # ...when violations present, process is deemed to not have succeeded
+    # ...when violations present, ntt is deemed to not have succeeded
     result_with_violations = NoThrowResult(;
                                            violations=["look out",
                                                        "LOOK OUT!"])
@@ -71,78 +71,77 @@ end
     @test isequal(NoThrowResult(record), NoThrowResult(record))
 end
 
-
 @testset "`NoThrowTransform`" begin
-    process = NoThrowTransform(SchemaAV1, SchemaBV1,
-                                      _ -> NoThrowResult(SchemaBV1(;
-                                                                   name="yay")))
-    @test input_specification(process) == SchemaAV1
-    @test output_specification(process) == SchemaBV1
+    ntt = NoThrowTransform(SchemaAV1, SchemaBV1,
+                               _ -> NoThrowResult(SchemaBV1(;
+                                                            name="yay")))
+    @test input_specification(ntt) == SchemaAV1
+    @test NoThrowResult{SchemaBV1} <: output_specification(ntt)
     input_record = SchemaAV1(; foo="rabbit")
-    result = transform!(process, input_record)
+    result = transform!(ntt, input_record)
     @test nothrow_succeeded(result)
-    @test result.record isa SchemaBV1
+    @test result isa NoThrowResult{SchemaBV1}
 
     nonconforming_input_record = SchemaBV1(; name="rad")
-    result = transform!(process, nonconforming_input_record)
+    result = transform!(ntt, nonconforming_input_record)
     @test !nothrow_succeeded(result)
     @test isequal(only(result.violations),
                   """Record doesn't conform to input schema SchemaAV1. Details: ArgumentError("Invalid value set for field `foo`, expected String, got a value of type Missing (missing)")""")
 
     conforming_input_record = SchemaCV1(; foo="rad")
-    @test !(conforming_input_record isa input_specification(process))
-    result = transform!(process, conforming_input_record)
+    @test !(conforming_input_record isa input_specification(ntt))
+    result = transform!(ntt, conforming_input_record)
     @test nothrow_succeeded(result)
 
     # Test Base extensions
     fn = _ -> NoThrowResult(SchemaBV1(; name="yay"))
     @test NoThrowTransform(SchemaAV1, SchemaBV1, fn) ==
           NoThrowTransform(SchemaAV1, SchemaBV1,
-                                  fn)
+                           fn)
     @test isequal(NoThrowTransform(SchemaAV1, SchemaBV1, fn),
                   NoThrowTransform(SchemaAV1, SchemaBV1, fn))
 end
 
 @testset "`identity_no_throw_transform`" begin
-    test_apply_fn(_) = NoThrowResult(SchemaBV1(; name="yay"))
-    process_a = NoThrowTransform(SchemaAV1, SchemaBV1, test_apply_fn)
-    @test !is_identity_no_throw_transform(process_a)
+    test_transform_fn(_) = NoThrowResult(SchemaBV1(; name="yay"))
+    ntt_a = NoThrowTransform(SchemaAV1, SchemaBV1, test_transform_fn)
+    @test !is_identity_no_throw_transform(ntt_a)
     @test_logs (:debug,
-                "Input and output schemas are not identical: NoThrowTransform (input: SchemaAV1; output: SchemaBV1; process: test_apply_fn)") min_level = Logging.Debug !is_identity_no_throw_transform(process_a)
+                "Input and output schemas are not identical: NoThrowTransform (input: SchemaAV1; output: SchemaBV1; ntt: test_transform_fn)") min_level = Logging.Debug !is_identity_no_throw_transform(ntt_a)
 
-    process_b = NoThrowTransform(SchemaBV1, SchemaBV1, test_apply_fn)
-    @test !is_identity_no_throw_transform(process_b)
-    @test @test_logs (:debug, "`apply_fn` is not `identity_process_result_transform`") min_level = Logging.Debug match_mode = :any !is_identity_no_throw_transform(process_b)
+    ntt_b = NoThrowTransform(SchemaBV1, SchemaBV1, test_transform_fn)
+    @test !is_identity_no_throw_transform(ntt_b)
+    @test @test_logs (:debug, "`transform_fn` is not `identity_ntt_result_transform`") min_level = Logging.Debug match_mode = :any !is_identity_no_throw_transform(ntt_b)
 
-    process_c = identity_no_throw_transform(SchemaAV1)
-    @test is_identity_no_throw_transform(process_c)
+    ntt_c = identity_no_throw_transform(SchemaAV1)
+    @test is_identity_no_throw_transform(ntt_c)
 
-    process_d = NoThrowTransform(SchemaAV1, SchemaAV1,
-                                        TransformSpecifications.identity_process_result_transform)
-    @test is_identity_no_throw_transform(process_d)
+    ntt_d = NoThrowTransform(SchemaAV1, SchemaAV1,
+                                 TransformSpecifications.identity_ntt_result_transform)
+    @test is_identity_no_throw_transform(ntt_d)
 end
 
-@testset "`TransformSpecificationChain`" begin
-    process = identity_no_throw_transform(SchemaAV1)
-    steps = OrderedDict("a" => process, "b" => process)
+@testset "`NoThrowTransformChain`" begin
+    ntt = identity_no_throw_transform(SchemaAV1)
+    steps = OrderedDict("a" => ntt, "b" => ntt)
     constructors = Dict("a" => identity, "c" => identity)
 
     err_str = """ArgumentError: Mismatch in chain steps:
-                 - Keys present in `process_steps` are missing in `input_constructors`: ["b"]
+                 - Keys present in `ntt_steps` are missing in `input_constructors`: ["b"]
                  - Keys present in `input_constructors` are missing in `input_constructors`: ["c"]"""
-    @test_throws err_str TransformSpecificationChain(steps, constructors)
+    @test_throws err_str NoThrowTransformChain(steps, constructors)
 
     # Input constructor for first step is optional---but must be `nothing` if present
-    @test TransformSpecificationChain(OrderedDict(:a => process, :b => process),
-                                      Dict(:b => identity)) isa TransformSpecificationChain
-    @test TransformSpecificationChain(OrderedDict(:a => process, :b => process),
+    @test NoThrowTransformChain(OrderedDict(:a => ntt, :b => ntt),
+                                      Dict(:b => identity)) isa NoThrowTransformChain
+    @test NoThrowTransformChain(OrderedDict(:a => ntt, :b => ntt),
                                       Dict(:a => nothing, :b => identity)) isa
-          TransformSpecificationChain
-    @test_throws "ArgumentError: First step's input constructor must be `nothing`" TransformSpecificationChain(OrderedDict(:a => process,
-                                                                                                                           :b => process),
+          NoThrowTransformChain
+    @test_throws "ArgumentError: First step's input constructor must be `nothing`" NoThrowTransformChain(OrderedDict(:a => ntt,
+                                                                                                                           :b => ntt),
                                                                                                                Dict(:a => identity,
                                                                                                                     :b => identity)) isa
-                                                                                   TransformSpecificationChain
+                                                                                   NoThrowTransformChain
 
     # TODO: test chain
     # TODO: test append! functionality

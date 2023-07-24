@@ -10,12 +10,10 @@ using Legolas: @schema, @version
 using OrderedCollections
 
 include("abstract.jl")
-export AbstractTransformSpecification, transform!, input_specification,
-       output_specification
+export AbstractTransformSpecification, input_specification, output_specification, transform!
 
 include("nothrow_transforms.jl")
-export NoThrowResult, nothrow_succeeded, NoThrowTransform, TransformSpecificationChain,
-       identity_no_throw_transform, is_identity_no_throw_transform,
-       AbstractProcessChainStep
+export NoThrowResult, NoThrowTransform, nothrow_succeeded, NoThrowTransformChain,
+ChainStepType, identity_no_throw_transform, is_identity_no_throw_transform
 
 end
