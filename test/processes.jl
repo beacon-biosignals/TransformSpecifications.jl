@@ -59,7 +59,8 @@ end
     # When violations are present, record state is undefined: can be missing or present despite violations
     #TODO-decide: maybe we don't want to support this?? and they should always be missing??? discuss!
     @test LegolasProcessResult(; violations="Foo") isa LegolasProcessResult{Missing}
-    @test LegolasProcessResult(; violations="Foo", record) isa LegolasProcessResult{SchemaAV1}
+    @test LegolasProcessResult(; violations="Foo", record) isa
+          LegolasProcessResult{SchemaAV1}
 
     # Struct is non-copying:
     record = SchemaAV1(; foo="whee")
@@ -113,10 +114,14 @@ end
 
     process_b = LegolasProcess(SchemaBV1, SchemaBV1, test_apply_fn)
     @test !is_identity_process(process_b)
-    @test @test_logs (:debug, "`apply_fn` is not identity") min_level = Logging.Debug match_mode = :any !is_identity_process(process_b)
+    @test @test_logs (:debug, "`apply_fn` is not `identity_process_result_transform`") min_level = Logging.Debug match_mode = :any !is_identity_process(process_b)
 
     process_c = identity_legolas_process(SchemaAV1)
     @test is_identity_process(process_c)
+
+    process_d = LegolasProcess(SchemaAV1, SchemaAV1,
+                               LegolasProcesses.identity_process_result_transform)
+    @test is_identity_process(process_d)
 end
 
 @testset "`LegolasProcessChain`" begin

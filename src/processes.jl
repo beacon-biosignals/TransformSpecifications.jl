@@ -243,9 +243,14 @@ Required to be the first element in a [`LegolasProcessChain`](@ref).
 See also: [`is_identity_process`](@ref)
 """
 function identity_legolas_process(io_schema::Type{<:Legolas.AbstractRecord})
-    return LegolasProcess(io_schema, io_schema, r -> LegolasProcessResult(r))
-    #TODO-help: i don't really want to have to define x->..., I want to `just` use `LegolasProcessResult` instead of `x -> ...`, but the construtor for LegolasProcessResult is not recognized as conforming to the `::Function` type on contruction :(
+    return LegolasProcess(io_schema, io_schema, identity_process_result_transform)
 end
+
+#TODO-help: i don't really want to have to define a function for this, I want to
+# `just` use `LegolasProcessResult` instead of a defined function from w/in `identity_legolas_process`, but the construtor for
+# LegolasProcessResult is not recognized as conforming to the `::Function` type on contruction :(
+# TODO: ALSO the name for this is terrible. hold off on bikeshedding until overall package rename is complete
+identity_process_result_transform(io_schema::Type{<:Legolas.AbstractRecord}) = LegolasProcessResult(r)
 
 """
     is_identity_process(process::LegolasProcess) -> Bool
@@ -257,14 +262,9 @@ function is_identity_process(process::LegolasProcess)
         @debug "Input and output schemas are not identical: $process"
         return false
     end
-    lhs = string(code_typed(process.apply_fn, (process.input_schema,); debuginfo=:none))
-    rhs = string(code_typed((r -> LegolasProcessResult(r)), (process.input_schema,);
-                            debuginfo=:none))
-    is_identity = isequal(lhs, rhs)
+    is_identity = isequal(process.apply_fn, identity_process_result_transform)
     if !is_identity
-        @debug "`apply_fn` is not identity"
-        @debug "Input: $lhs"
-        @debug "Expected: $rhs"
+        @debug "`apply_fn` is not `identity_process_result_transform`"
     end
     return is_identity
 end
