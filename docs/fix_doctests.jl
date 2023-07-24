@@ -5,16 +5,17 @@
 # the doctests, and it's good to separate those changes so you can check
 # they are correct (and be easily revertable if they do something wrong).
 
-using Documenter, LegolasProcesses
+using Documenter, TransformSpecifications
 
-DocMeta.setdocmeta!(LegolasProcesses, :DocTestSetup, :(using LegolasProcesses);
+DocMeta.setdocmeta!(TransformSpecifications, :DocTestSetup,
+                    :(using TransformSpecifications);
                     recursive=true)
 
 if get(ENV, "CI", "false") == "true" || success(`git diff --quiet`)
     # if ismissing(get(ENV, "AWS_PROFILE", missing))
-    #     @warn """You may need to set `ENV["AWS_PROFILE"] = legolasprocesses-ci` in order to successfully run the doctests"""
+    #     @warn """You may need to set `ENV["AWS_PROFILE"] = transformspecifications-ci` in order to successfully run the doctests"""
     # end
-    doctest(LegolasProcesses; fix=true)
+    doctest(TransformSpecifications; fix=true)
 else
     error("Git repo dirty; commit changes before fixing doctests.")
 end
