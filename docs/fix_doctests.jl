@@ -7,8 +7,8 @@
 
 using Documenter, TransformSpecifications
 
-DocMeta.setdocmeta!(TransformSpecifications, :DocTestSetup, :(using TransformSpecifications);
-                    recursive=true)
+DocMeta.setdocmeta!(TransformSpecifications, :DocTestSetup,
+                    :(using TransformSpecifications); recursive=true)
 
 if get(ENV, "CI", "false") == "true" || success(`git diff --quiet`)
     # if ismissing(get(ENV, "AWS_PROFILE", missing))
