@@ -1,119 +1,18 @@
-"""
-    TransformSpecificationResult(; warnings::Union{String,Vector{String}}=String[],
-                         violations::Union{String,Vector{String}}=String[],
-                         record=missing)
-    TransformSpecificationResult(record; kwargs...)
-
-Results of an [`AbstractTransformSpecification`](@ref), indicating success of a process through
-presence (or lack thereof) of `violations`.
-
-Must contain either a non-`missing` `record` or a non-empty `violations`, although
-non-empty `violations` does not mean that `record` is necessarily `missing`.
-
-See also: [`process_succeeded`](@ref)
-
-## Fields
-
-- `warnings::Vector{String}`: List of generated warnings that are not critical enough to be `violations`.
-- `violations::Vector{String}` List of reason(s) `record` was not able to be generated.
-- `record::`: Generated `record`; `missing` if any `violations` encountered.
-
-## Example
-
-```jldoctest
-julia> @schema "example" ExampleSchema
-julia> @version ExampleSchemaV1 begin
-    name::String
-end
-
-julia> TransformSpecificationResult(ExampleSchemaV1(; name="yeehaw"))
-TransformSpecificationResult: Process succeeded
-  ✅ record: ExampleSchemaV1:
- :name  "yeehaw"
-
-julia> TransformSpecificationResult(ExampleSchemaV1(; name="huzzah"); warnings="Hark, watch your step...")
-TransformSpecificationResult: Process succeeded
-  ⚠️  Hark, watch your step...
-  ☑️  record: ExampleSchemaV1:
- :name  "huzzah"
-
-julia> TransformSpecificationResult(; violations=["Epic fail!", "Slightly less epic fail!"], warnings=["Uh oh..."])
-TransformSpecificationResult: Process failed
-  ❗ Epic fail!
-  ❗ Slightly less epic fail!
-  ⚠️  Uh oh...
-  ❌ record: missing
-
-julia> TransformSpecificationResult(; violations=["Epic fail!", "Slightly less epic fail!"], warnings=["Uh oh..."], record=ExampleSchemaV1(; name="woo"))
-TransformSpecificationResult: Process failed
-  ❗ Epic fail!
-  ❗ Slightly less epic fail!
-  ⚠️  Uh oh...
-  ☑️  record: ExampleSchemaV1:
- :name  "woo"
-```
-"""
-struct TransformSpecificationResult{T<:Union{Missing,<:Legolas.AbstractRecord}}
-    warnings::Vector{String}
-    violations::Vector{String}
-    record::T
-
-    function TransformSpecificationResult(; warnings::Union{String,Vector{String}}=String[],
-                                          violations::Union{String,Vector{String}}=String[],
-                                          record::Union{Missing,<:Legolas.AbstractRecord}=missing)
-        if ismissing(record) && isempty(violations)
-            throw(ArgumentError("Invalid args: either `record` must be non-missing OR `violations` must be non-empty."))
-        end
-        warnings isa Vector{String} || (warnings = [warnings])
-        violations isa Vector{String} || (violations = [violations])
-        return new{typeof(record)}(warnings, violations, record)
-    end
-end
-
-function TransformSpecificationResult(record; warnings=String[], violations=String[])
-    return TransformSpecificationResult(; record, warnings, violations)
-end
-
-"""
-    process_succeeded(result::TransformSpecificationResult) -> Bool
-
-Return `true` if `result` indicates successful completion, i.e. if `result.violations`
-is empty.
-
-See also: [`TransformSpecificationResult`](@ref)
-"""
-process_succeeded(result::TransformSpecificationResult) = isempty(result.violations)
-
-function Base.show(io::IO, r::TransformSpecificationResult)
-    succeeded = process_succeeded(r)
-    str = "TransformSpecificationResult: Process $(succeeded ? "succeeded" : "failed")\n"
-    for v in r.violations
-        str *= "  ❗ $v\n"
-    end
-    for w in r.warnings
-        str *= "  ⚠️  $w\n"
-    end
-    bullet = ismissing(r.record) ? "❌" : (succeeded ? "✅" : "☑️ ")
-    str *= "  $bullet record: $(r.record)"
-    return print(io, str)
-end
-
 #####
-##### `TransformSpecification`
+##### `NoThrowLegolasTransform`
 #####
 
 """
-    TransformSpecification <: AbstractTransformSpecification
+    NoThrowLegolasTransform <: AbstractTransformSpecification
 
-Basic processing component that converts input record with schema
-`input_specification` to a [`TransformSpecificationResult`](@ref) with record type `output_specification`,
-via `apply_fn`.
+Basic processing component that converts input record with [Legolas](https://github.com/beacon-biosignals/Legolas.jl)-schema
+`input_specification` to a [`NoThrowResult`](@ref) with record type `output_specification`, via `apply_fn`.
 
 ## Fields
 
 - `input_specification::Type{<:Legolas.AbstractRecord}`
 - `output_specification::Type{<:Legolas.AbstractRecord}`
-- `apply_fn::Function` Function with signature `apply_fn(::input_specification) -> TransformSpecificationResult{output_specification}`
+- `apply_fn::Function` Function with signature `apply_fn(::input_specification) -> NoThrowResult{output_specification}`
 
 ## Example
 
@@ -130,36 +29,36 @@ end
 
 julia> function apply_example(in_record)
     out_name = in_record.in_name * "_earthling"
-    return TransformSpecificationResult(ExampleOutSchemaV1(; out_name))
+    return NoThrowResult(ExampleOutSchemaV1(; out_name))
 end
-julia> p = TransformSpecification(ExampleInSchemaV1, ExampleOutSchemaV1, apply_example)
-TransformSpecification (input: ExampleInSchemaV1; output: ExampleOutSchemaV1; process: apply_example)
+julia> p = NoThrowLegolasTransform(ExampleInSchemaV1, ExampleOutSchemaV1, apply_example)
+NoThrowLegolasTransform (input: ExampleInSchemaV1; output: ExampleOutSchemaV1; process: apply_example)
 
-julia> apply!(p, ExampleInSchemaV1(; in_name="greetings"))
-TransformSpecificationResult: Process succeeded
+julia> transform!(p, ExampleInSchemaV1(; in_name="greetings"))
+NoThrowResult: Process succeeded
   ✅ record: ExampleOutSchemaV1:
  :out_name  "greetings_earthling"
 
-julia> force_failure_example(in_record) = TransformSpecificationResult(; violations=["womp", "womp"])
+julia> force_failure_example(in_record) = NoThrowResult(; violations=["womp", "womp"])
 
-julia> p = TransformSpecification(ExampleInSchemaV1, ExampleOutSchemaV1, force_failure_example)
-TransformSpecification (input: ExampleInSchemaV1; output: ExampleOutSchemaV1; process: force_failure_example)
+julia> p = NoThrowLegolasTransform(ExampleInSchemaV1, ExampleOutSchemaV1, force_failure_example)
+NoThrowLegolasTransform (input: ExampleInSchemaV1; output: ExampleOutSchemaV1; process: force_failure_example)
 
-julia> apply!(p, ExampleInSchemaV1(; in_name="greetings"))
-TransformSpecificationResult: Process failed
+julia> transform!(p, ExampleInSchemaV1(; in_name="greetings"))
+NoThrowResult: Process failed
   ❗ womp
   ❗ womp
   ❌ record: missing
 ```
 """
-Base.@kwdef struct TransformSpecification <: AbstractTransformSpecification
+Base.@kwdef struct NoThrowLegolasTransform <: AbstractTransformSpecification
     input_specification::Type{<:Legolas.AbstractRecord}
     output_specification::Type{<:Legolas.AbstractRecord}
     apply_fn::Function  # TODO-help: how to validate the function signature (in type or on construction), to ensure takes in input schema as specified, spits out output schema?
 end
 #= TODO-decide: should we make this parametric on input and output schema?? could be kinda cool...
 # e.g.
-Base.@kwdef struct TransformSpecification{T,U} where {T<:Type{<:Legolas.AbstractRecord}, U<:Type{<:Legolas.AbstractRecord}} <: AbstractTransformSpecification
+Base.@kwdef struct NoThrowLegolasTransform{T,U} where {T<:Type{<:Legolas.AbstractRecord}, U<:Type{<:Legolas.AbstractRecord}} <: AbstractTransformSpecification
     input_specification::T
     output_specification::U
     apply_fn::Function
@@ -168,60 +67,60 @@ end
 
 #TODO-decide: do we want to enforce `input_record` type? how, if we wanted to?
 """
-    apply!(process::TransformSpecification, input_record)
+    transform!(process::NoThrowLegolasTransform, input_record)
 
-Return [`TransformSpecificationResult`](@ref) of applying `process.apply_fn` to `input_record`.
+Return [`NoThrowResult`](@ref) of applying `process.apply_fn` to `input_record`.
 """
-function apply!(process::TransformSpecification, input_record)
+function transform!(process::NoThrowLegolasTransform, input_record)
     try
         # Check that input conforms to input schema (doesn't matter if it _actually_
         # is of the same schema type, or a child, or whatever. if it conforms? it's valid.)
         # TODO-help: is there a better way to do this? e.g. to use Legolas.find_violations instead of this?
         process.input_specification(input_record)
     catch e
-        return TransformSpecificationResult(;
-                                            violations="Record doesn't conform to input schema $(process.input_specification). Details: " *
-                                                       string(e))
+        return NoThrowResult(;
+                             violations="Record doesn't conform to input schema $(process.input_specification). Details: " *
+                                        string(e))
     end
     return process.apply_fn(input_record)
 end
 
-input_specification(process::TransformSpecification) = process.input_specification
-output_specification(process::TransformSpecification) = process.output_specification
+input_specification(process::NoThrowLegolasTransform) = process.input_specification
+output_specification(process::NoThrowLegolasTransform) = process.output_specification
 
-function Base.show(io::IO, p::TransformSpecification)
+function Base.show(io::IO, p::NoThrowLegolasTransform)
     return print(io,
-                 "TransformSpecification (input: $(p.input_specification); output: $(p.output_specification); process: $(p.apply_fn))")
+                 "NoThrowLegolasTransform (input: $(p.input_specification); output: $(p.output_specification); process: $(p.apply_fn))")
 end
 
 """
-    identity_legolas_process(io_schema::Type{<:Legolas.AbstractRecord}) -> TransformSpecification{io_schema}
+    identity_legolas_process(io_schema::Type{<:Legolas.AbstractRecord}) -> NoThrowLegolasTransform{io_schema}
 
-Create [`TransformSpecification`](@ref) where `input_specification==output_specification` and `apply_fn`
-result is a `TransformSpecificationResult{io_schema}`.
+Create [`NoThrowLegolasTransform`](@ref) where `input_specification==output_specification` and `apply_fn`
+result is a `NoThrowResult{io_schema}`.
 
 Required to be the first element in a [`TransformSpecificationChain`](@ref).
 
 See also: [`is_identity_process`](@ref)
 """
 function identity_legolas_process(io_schema::Type{<:Legolas.AbstractRecord})
-    return TransformSpecification(io_schema, io_schema, identity_process_result_transform)
+    return NoThrowLegolasTransform(io_schema, io_schema, identity_process_result_transform)
 end
 
 #TODO-help: i don't really want to have to define a function for this, I want to
-# `just` use `TransformSpecificationResult` instead of a defined function from w/in `identity_legolas_process`, but the construtor for
-# TransformSpecificationResult is not recognized as conforming to the `::Function` type on contruction :(
+# `just` use `NoThrowResult` instead of a defined function from w/in `identity_legolas_process`, but the construtor for
+# NoThrowResult is not recognized as conforming to the `::Function` type on contruction :(
 # TODO: ALSO the name for this is terrible. hold off on bikeshedding until overall package rename is complete
 function identity_process_result_transform(io_schema::Type{<:Legolas.AbstractRecord})
-    return TransformSpecificationResult(r)
+    return NoThrowResult(r)
 end
 
 """
-    is_identity_process(process::TransformSpecification) -> Bool
+    is_identity_process(process::NoThrowLegolasTransform) -> Bool
 
 Check if `process` meets the definition of an [`identity_legolas_process`](@ref).
 """
-function is_identity_process(process::TransformSpecification)
+function is_identity_process(process::NoThrowLegolasTransform)
     if input_specification(process) != output_specification(process)
         @debug "Input and output schemas are not identical: $process"
         return false
@@ -242,7 +141,7 @@ end
     TransformSpecificationChain(steps::Vector{<:Tuple{Symbol,AbstractTransformSpecification, Function}})
 
 Processing component that runs a sequence of [`AbstractTransformSpecification`](@ref) `process_steps`,
-by [`apply!`](@ref)ing each step in order. The chain's `input_specification` is that of the
+by [`transform!`](@ref)ing each step in order. The chain's `input_specification` is that of the
 first element in `process_steps`; the chain's `output_specification` is that of the last
 element in the `process_steps`.
 
@@ -269,7 +168,7 @@ does not construct its own input; its input construction function must therefore
 
 - `process_steps::OrderedDict{Symbol,AbstractTransformSpecification}` Ordered processing steps
 - `input_constructors::Dict{Symbol,Function}` Dictionary with functions for constructing the input
-    for each key in `process_steps` as a function that takes in a Dict{Symbol,TransformSpecificationResult}
+    for each key in `process_steps` as a function that takes in a Dict{Symbol,NoThrowResult}
     of all upstream `process_steps` results.
 
 ## Example
@@ -339,7 +238,9 @@ end
 
 Return Legolas schema of record accepted as input to first process in `chain.process_steps`.
 """
-input_specification(c::TransformSpecificationChain) = first(c.process_steps)[2].input_specification
+function input_specification(c::TransformSpecificationChain)
+    return first(c.process_steps)[2].input_specification
+end
 
 """
     output_specification(chain::TransformSpecificationChain) -> Type{<:Legolas.AbstractRecord}
@@ -347,12 +248,14 @@ input_specification(c::TransformSpecificationChain) = first(c.process_steps)[2].
 Return Legolas schema of record returned by last process in `chain.process_steps`,
 which is the record returned by successful application of the entire chain.
 """
-output_specification(c::TransformSpecificationChain) = last(c.process_steps)[2].output_specification
+function output_specification(c::TransformSpecificationChain)
+    return last(c.process_steps)[2].output_specification
+end
 
 """
-    apply!(chain::TransformSpecificationChain, input_record)
+    transform!(chain::TransformSpecificationChain, input_record)
 
-Return [`TransformSpecificationResult`](@ref) of sequentially `apply!`ing all `chain.process_steps`
+Return [`NoThrowResult`](@ref) of sequentially `transform!`ing all `chain.process_steps`
 to `input_record`.
 
 Before each step (`key`), the step's `chain.input_constructors[key]` is called
@@ -362,14 +265,14 @@ the step that conforms to the step's requisite `input_specification(process)`.
 Initial step does not call input construction for itself, as chain input is passed directly
 into it.
 """
-function apply!(chain::TransformSpecificationChain, input_record)
+function transform!(chain::TransformSpecificationChain, input_record)
     warnings = String[]
     component_results = OrderedDict{Symbol,Legolas.AbstractRecord}()
     for (i_process, (name, process)) in enumerate(chain.process_steps)
         @debug "Applying component `$name`..."
         input_record = if i_process == 1
             # The initial input record does not need to be constructed---it already
-            # exists. (Is it valid? Who knows---but the `apply!` function will handle
+            # exists. (Is it valid? Who knows---but the `transform!` function will handle
             # that validation below!)
             input_record
         else
@@ -380,19 +283,19 @@ function apply!(chain::TransformSpecificationChain, input_record)
             try
                 process.input_specification(; input_nt...)
             catch e
-                return TransformSpecificationResult(; warnings,
-                                                    violations=["Process $name failed: $e"])
+                return NoThrowResult(; warnings,
+                                     violations=["Process $name failed: $e"])
             end
         end
-        result = apply!(process, input_record)
+        result = transform!(process, input_record)
 
         # Compile results
         append!(warnings, result.warnings)
         isempty(result.violations) ||
-            return TransformSpecificationResult(; warnings, result.violations)
+            return NoThrowResult(; warnings, result.violations)
         component_results[name] = result.record
     end
-    return TransformSpecificationResult(; warnings, record=last(component_results)[2])
+    return NoThrowResult(; warnings, record=last(component_results)[2])
 end
 
 function Base.show(io::IO, c::TransformSpecificationChain)
@@ -412,7 +315,7 @@ end
 
 for pred in (:(==), :(isequal)),
     T in
-    [AbstractTransformSpecification, TransformSpecificationResult, TransformSpecification,
+    [AbstractTransformSpecification, NoThrowResult, NoThrowLegolasTransform,
      TransformSpecificationChain]
 
     @eval function Base.$pred(x::$T, y::$T)
@@ -420,3 +323,5 @@ for pred in (:(==), :(isequal)),
     end
 end
 # TODO-help: do we need a hash function for these as well?
+
+
