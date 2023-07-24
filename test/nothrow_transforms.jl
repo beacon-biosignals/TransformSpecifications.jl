@@ -73,8 +73,8 @@ end
 
 @testset "`NoThrowTransform`" begin
     ntt = NoThrowTransform(SchemaAV1, SchemaBV1,
-                               _ -> NoThrowResult(SchemaBV1(;
-                                                            name="yay")))
+                           _ -> NoThrowResult(SchemaBV1(;
+                                                        name="yay")))
     @test input_specification(ntt) == SchemaAV1
     @test NoThrowResult{SchemaBV1} <: output_specification(ntt)
     input_record = SchemaAV1(; foo="rabbit")
@@ -111,13 +111,14 @@ end
 
     ntt_b = NoThrowTransform(SchemaBV1, SchemaBV1, test_transform_fn)
     @test !is_identity_no_throw_transform(ntt_b)
-    @test @test_logs (:debug, "`transform_fn` (`test_transform_fn`) is not `identity_process_result_transform`") min_level = Logging.Debug match_mode = :any !is_identity_no_throw_transform(ntt_b)
+    @test @test_logs (:debug,
+                      "`transform_fn` (`test_transform_fn`) is not `identity_process_result_transform`") min_level = Logging.Debug match_mode = :any !is_identity_no_throw_transform(ntt_b)
 
     ntt_c = identity_no_throw_transform(SchemaAV1)
     @test is_identity_no_throw_transform(ntt_c)
 
     ntt_d = NoThrowTransform(SchemaAV1, SchemaAV1,
-                                 TransformSpecifications.identity_process_result_transform)
+                             TransformSpecifications.identity_process_result_transform)
     @test is_identity_no_throw_transform(ntt_d)
 end
 
@@ -127,25 +128,24 @@ end
     constructors = Dict("a" => identity, "c" => identity)
 
     err_str = """ArgumentError: Mismatch in chain steps:
-                 - Keys present in `ntt_steps` are missing in `input_constructors`: ["b"]
+                 - Keys present in `transform_steps` are missing in `input_constructors`: ["b"]
                  - Keys present in `input_constructors` are missing in `input_constructors`: ["c"]"""
     @test_throws err_str NoThrowTransformChain(steps, constructors)
 
     # Input constructor for first step is optional---but must be `nothing` if present
     @test NoThrowTransformChain(OrderedDict(:a => ntt, :b => ntt),
-                                      Dict(:b => identity)) isa NoThrowTransformChain
+                                Dict(:b => identity)) isa NoThrowTransformChain
     @test NoThrowTransformChain(OrderedDict(:a => ntt, :b => ntt),
-                                      Dict(:a => nothing, :b => identity)) isa
+                                Dict(:a => nothing, :b => identity)) isa
           NoThrowTransformChain
     @test_throws "ArgumentError: First step's input constructor must be `nothing`" NoThrowTransformChain(OrderedDict(:a => ntt,
-                                                                                                                           :b => ntt),
-                                                                                                               Dict(:a => identity,
-                                                                                                                    :b => identity)) isa
+                                                                                                                     :b => ntt),
+                                                                                                         Dict(:a => identity,
+                                                                                                              :b => identity)) isa
                                                                                    NoThrowTransformChain
 
     # TODO: test chain
     # TODO: test append! functionality
     # Test Base extensions
 
-    # TODO: implement a helper function for a debug element, test it
 end
