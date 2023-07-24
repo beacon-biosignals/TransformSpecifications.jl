@@ -81,8 +81,8 @@ end
     process = TransformSpecification(SchemaAV1, SchemaBV1,
                                      _ -> TransformSpecificationResult(SchemaBV1(;
                                                                                  name="yay")))
-    @test input_schema(process) == SchemaAV1
-    @test output_schema(process) == SchemaBV1
+    @test input_specification(process) == SchemaAV1
+    @test output_specification(process) == SchemaBV1
     input_record = SchemaAV1(; foo="rabbit")
     result = apply!(process, input_record)
     @test process_succeeded(result)
@@ -95,7 +95,7 @@ end
                   """Record doesn't conform to input schema SchemaAV1. Details: ArgumentError("Invalid value set for field `foo`, expected String, got a value of type Missing (missing)")""")
 
     conforming_input_record = SchemaCV1(; foo="rad")
-    @test !(conforming_input_record isa input_schema(process))
+    @test !(conforming_input_record isa input_specification(process))
     result = apply!(process, conforming_input_record)
     @test process_succeeded(result)
 

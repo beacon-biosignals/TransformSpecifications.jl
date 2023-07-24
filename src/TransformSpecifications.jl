@@ -11,8 +11,10 @@ using Legolas: @schema, @version
 using OrderedCollections
 
 include("processes.jl")
-export AbstractTransformSpecification, apply!, input_schema, output_schema,
-       TransformSpecificationResult, TransformSpecification, TransformSpecificationChain,
+export AbstractTransformSpecification, apply!, input_specification, output_specification
+
+include("legolas.jl")
+export TransformSpecificationResult, TransformSpecification, TransformSpecificationChain,
        process_succeeded, identity_legolas_process, is_identity_process,
        AbstractProcessChainStep
 
