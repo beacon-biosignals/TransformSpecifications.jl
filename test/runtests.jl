@@ -5,7 +5,5 @@ include("set_up_tests.jl")
         Aqua.test_all(TransformSpecifications; ambiguities=false)
     end
 
-    # @testset "Abstract" include("abstract.jl") #TODO: implement!
-    @testset "No-throw type" include("nothrow.jl")
-    @testset "No-throw Legolas transforms" include("nothrow_legolas.jl")
+    @testset "No-throw transforms" include("nothrow_transforms.jl")
 end

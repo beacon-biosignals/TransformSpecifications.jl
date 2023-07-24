@@ -1,9 +1,109 @@
+"""
+    NoThrowResult{T}(; warnings::Union{String,Vector{String}}=String[],
+                     violations::Union{String,Vector{String}}=String[],
+                     result::T)
+    NoThrowResult(result::T; kwargs...)
+
+Type that specifies the result of a transformation that indicates success of a
+process through presence (or lack thereof) of `violations`.
+
+Consists of either a non-`missing` `result` or a non-empty `violations`.
+
+See also: [`nothrow_succeeded`](@ref)
+
+## Fields
+
+- `warnings::Vector{String}`: List of generated warnings that are not critical
+    enough to be `violations`.
+- `violations::Vector{String}` List of reason(s) `result` was not able to be generated.
+- `result::`: Generated `result`; `missing` if any `violations` encountered.
+
+## Example
+
+```jldoctest
+julia> @schema "example" ExampleSchema
+julia> @version ExampleSchemaV1 begin
+    name::String
+end
+
+julia> NoThrowResult(ExampleSchemaV1(; name="yeehaw"))
+NoThrowResult{ExampleSchemaV1}: succeeded
+  ✅ result: ExampleSchemaV1:
+ :name  "yeehaw"
+
+julia> NoThrowResult(ExampleSchemaV1(; name="huzzah");
+                     warnings="Hark, watch your step...")
+NoThrowResult{ExampleSchemaV1}: Process succeeded
+  ⚠️  Hark, watch your step...
+  ☑️  result: ExampleSchemaV1:
+ :name  "huzzah"
+
+julia> NoThrowResult(; violations=["Epic fail!", "Slightly less epic fail!"],
+                     warnings=["Uh oh..."])
+NoThrowResult{Missing}: failed
+  ❗ Epic fail!
+  ❗ Slightly less epic fail!
+  ⚠️  Uh oh...
+  ❌ result: missing
+```
+"""
+struct NoThrowResult{T}
+    warnings::Vector{String}
+    violations::Vector{String}
+    result::T
+
+    function NoThrowResult(; warnings::Union{String,Vector{String}}=String[],
+                           violations::Union{String,Vector{String}}=String[],
+                           result=missing)
+        if ismissing(result) && isempty(violations)
+            throw(ArgumentError("Invalid construction: either `result` must be non-missing \
+                                 OR `violations` must be non-empty."))
+        end
+        if !ismissing(result) && !isempty(violations)
+            throw(ArgumentError("Invalid construction: if `violations` are non-empty, \
+                                `result` must be `missing`."))
+        end
+        warnings isa Vector{String} || (warnings = [warnings])
+        violations isa Vector{String} || (violations = [violations])
+        return new{typeof(result)}(warnings, violations, result)
+    end
+end
+
+function NoThrowResult(result; warnings=String[], violations=String[])
+    return NoThrowResult(; result, warnings, violations)
+end
+
+function Base.show(io::IO, r::NoThrowResult)
+    succeeded = nothrow_succeeded(r)
+    str = "$(typeof(r)): Process $(succeeded ? "succeeded" : "failed")\n"
+    for v in r.violations
+        str *= "  ❗ $v\n"
+    end
+    for w in r.warnings
+        str *= "  ⚠️  $w\n"
+    end
+    bullet = ismissing(r.result) ? "❌" : "✅"
+    str *= "  $bullet result: $(r.result)"
+    return print(io, str)
+end
+
+"""
+    nothrow_succeeded(result::NoThrowResult) -> Bool
+
+Return `true` if `result` indicates successful completion, i.e. if `result.violations`
+is empty.
+
+See also: [`NoThrowResult`](@ref)
+"""
+nothrow_succeeded(::NoThrowResult{Missing}) = false
+nothrow_succeeded(::NoThrowResult) = true
+
 #####
-##### `NoThrowLegolasTransform`
+##### `NoThrowTransform`
 #####
 
 """
-    NoThrowLegolasTransform <: AbstractTransformSpecification
+    NoThrowTransform <: AbstractTransformSpecification
 
 Basic processing component that converts input record with [Legolas](https://github.com/beacon-biosignals/Legolas.jl)-schema
 `input_specification` to a [`NoThrowResult`](@ref) with record type `output_specification`, via `apply_fn`.
@@ -31,8 +131,8 @@ julia> function apply_example(in_record)
     out_name = in_record.in_name * "_earthling"
     return NoThrowResult(ExampleOutSchemaV1(; out_name))
 end
-julia> p = NoThrowLegolasTransform(ExampleInSchemaV1, ExampleOutSchemaV1, apply_example)
-NoThrowLegolasTransform (input: ExampleInSchemaV1; output: ExampleOutSchemaV1; process: apply_example)
+julia> p = NoThrowTransform(ExampleInSchemaV1, ExampleOutSchemaV1, apply_example)
+NoThrowTransform (input: ExampleInSchemaV1; output: ExampleOutSchemaV1; process: apply_example)
 
 julia> transform!(p, ExampleInSchemaV1(; in_name="greetings"))
 NoThrowResult: Process succeeded
@@ -41,8 +141,8 @@ NoThrowResult: Process succeeded
 
 julia> force_failure_example(in_record) = NoThrowResult(; violations=["womp", "womp"])
 
-julia> p = NoThrowLegolasTransform(ExampleInSchemaV1, ExampleOutSchemaV1, force_failure_example)
-NoThrowLegolasTransform (input: ExampleInSchemaV1; output: ExampleOutSchemaV1; process: force_failure_example)
+julia> p = NoThrowTransform(ExampleInSchemaV1, ExampleOutSchemaV1, force_failure_example)
+NoThrowTransform (input: ExampleInSchemaV1; output: ExampleOutSchemaV1; process: force_failure_example)
 
 julia> transform!(p, ExampleInSchemaV1(; in_name="greetings"))
 NoThrowResult: Process failed
@@ -51,14 +151,15 @@ NoThrowResult: Process failed
   ❌ record: missing
 ```
 """
-Base.@kwdef struct NoThrowLegolasTransform <: AbstractTransformSpecification
+#TODO-decide: is this a valid name for this type?? okay to have Legolas in here?
+Base.@kwdef struct NoThrowTransform <: AbstractTransformSpecification
     input_specification::Type{<:Legolas.AbstractRecord}
-    output_specification::Type{<:Legolas.AbstractRecord}
+    output_specification::NoThrowResult{Type{<:Legolas.AbstractRecord}}
     apply_fn::Function  # TODO-help: how to validate the function signature (in type or on construction), to ensure takes in input schema as specified, spits out output schema?
 end
-#= TODO-decide: should we make this parametric on input and output schema?? could be kinda cool...
+#= TODO-decide: should we make this parametric on input and/or output schema?? could be kinda cool...
 # e.g.
-Base.@kwdef struct NoThrowLegolasTransform{T,U} where {T<:Type{<:Legolas.AbstractRecord}, U<:Type{<:Legolas.AbstractRecord}} <: AbstractTransformSpecification
+Base.@kwdef struct NoThrowTransform{T,U} where {T<:Type{<:Legolas.AbstractRecord}, U<:Type{<:Legolas.AbstractRecord}} <: AbstractTransformSpecification
     input_specification::T
     output_specification::U
     apply_fn::Function
@@ -67,11 +168,11 @@ end
 
 #TODO-decide: do we want to enforce `input_record` type? how, if we wanted to?
 """
-    transform!(process::NoThrowLegolasTransform, input_record)
+    transform!(process::NoThrowTransform, input_record)
 
 Return [`NoThrowResult`](@ref) of applying `process.apply_fn` to `input_record`.
 """
-function transform!(process::NoThrowLegolasTransform, input_record)
+function transform!(process::NoThrowTransform, input_record)
     try
         # Check that input conforms to input schema (doesn't matter if it _actually_
         # is of the same schema type, or a child, or whatever. if it conforms? it's valid.)
@@ -85,30 +186,30 @@ function transform!(process::NoThrowLegolasTransform, input_record)
     return process.apply_fn(input_record)
 end
 
-input_specification(process::NoThrowLegolasTransform) = process.input_specification
-output_specification(process::NoThrowLegolasTransform) = process.output_specification
+input_specification(process::NoThrowTransform) = process.input_specification
+output_specification(process::NoThrowTransform) = process.output_specification
 
-function Base.show(io::IO, p::NoThrowLegolasTransform)
+function Base.show(io::IO, p::NoThrowTransform)
     return print(io,
-                 "NoThrowLegolasTransform (input: $(p.input_specification); output: $(p.output_specification); process: $(p.apply_fn))")
+                 "NoThrowTransform (input: $(p.input_specification); output: $(p.output_specification); process: $(p.apply_fn))")
 end
 
 """
-    identity_legolas_process(io_schema::Type{<:Legolas.AbstractRecord}) -> NoThrowLegolasTransform{io_schema}
+    identity_no_throw_transform(io_schema::Type{<:Legolas.AbstractRecord}) -> NoThrowTransform{io_schema}
 
-Create [`NoThrowLegolasTransform`](@ref) where `input_specification==output_specification` and `apply_fn`
+Create [`NoThrowTransform`](@ref) where `input_specification==output_specification` and `apply_fn`
 result is a `NoThrowResult{io_schema}`.
 
 Required to be the first element in a [`TransformSpecificationChain`](@ref).
 
-See also: [`is_identity_process`](@ref)
+See also: [`is_identity_no_throw_transform`](@ref)
 """
-function identity_legolas_process(io_schema::Type{<:Legolas.AbstractRecord})
-    return NoThrowLegolasTransform(io_schema, io_schema, identity_process_result_transform)
+function identity_no_throw_transform(io_schema::Type{<:Legolas.AbstractRecord})
+    return NoThrowTransform(io_schema, io_schema, identity_process_result_transform)
 end
 
 #TODO-help: i don't really want to have to define a function for this, I want to
-# `just` use `NoThrowResult` instead of a defined function from w/in `identity_legolas_process`, but the construtor for
+# `just` use `NoThrowResult` instead of a defined function from w/in `identity_no_throw_transform`, but the construtor for
 # NoThrowResult is not recognized as conforming to the `::Function` type on contruction :(
 # TODO: ALSO the name for this is terrible. hold off on bikeshedding until overall package rename is complete
 function identity_process_result_transform(io_schema::Type{<:Legolas.AbstractRecord})
@@ -116,11 +217,11 @@ function identity_process_result_transform(io_schema::Type{<:Legolas.AbstractRec
 end
 
 """
-    is_identity_process(process::NoThrowLegolasTransform) -> Bool
+    is_identity_no_throw_transform(process::NoThrowTransform) -> Bool
 
-Check if `process` meets the definition of an [`identity_legolas_process`](@ref).
+Check if `process` meets the definition of an [`identity_no_throw_transform`](@ref).
 """
-function is_identity_process(process::NoThrowLegolasTransform)
+function is_identity_no_throw_transform(process::NoThrowTransform)
     if input_specification(process) != output_specification(process)
         @debug "Input and output schemas are not identical: $process"
         return false
@@ -155,7 +256,7 @@ The constructor that takes in series of `steps` expects steps to take the format
 `(name, process, input_constructor)`.
 
 To grant downstream access to all fields passed into the first step, the first step should
-be an identity process, i.e., `is_identity_process(step)` should return true. Additionally,
+be an identity process, i.e., `is_identity_no_throw_transform(step)` should return true. Additionally,
 the first step receives input directly from the overall process chain input, so
 does not construct its own input; its input construction function must therefore by `nothing`.
 
@@ -315,7 +416,7 @@ end
 
 for pred in (:(==), :(isequal)),
     T in
-    [AbstractTransformSpecification, NoThrowResult, NoThrowLegolasTransform,
+    [AbstractTransformSpecification, NoThrowResult, NoThrowTransform,
      TransformSpecificationChain]
 
     @eval function Base.$pred(x::$T, y::$T)
