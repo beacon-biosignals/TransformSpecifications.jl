@@ -1,14 +1,14 @@
-name: LegolasProcesses.jl - CI
+name: TransformSpecifications.jl - CI
 on:
   workflow_dispatch:
   push:
     branches:
       - main
     tags: ["*"]
-    paths: ["**", ".github/workflows/LegolasProcesses_CI.yml"]
+    paths: ["**", ".github/workflows/TransformSpecifications_CI.yml"]
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
-    paths: ["**",".github/workflows/LegolasProcesses_CI.yml"]
+    paths: ["**",".github/workflows/TransformSpecifications_CI.yml"]
 concurrency:
   # Skip intermediate builds: always.
   # Cancel intermediate builds: only if it is a pull request build.
@@ -40,7 +40,7 @@ jobs:
       # - uses: aws-actions/configure-aws-credentials@v1
       #   with:
       #     aws-region: us-east-2
-      #     role-to-assume: arn:aws:iam::185776040155:role/legolasprocesses-ci
+      #     role-to-assume: arn:aws:iam::185776040155:role/transformspecifications-ci
       #     role-duration-seconds: 43200
       - uses: julia-actions/setup-julia@v1
         with:
@@ -69,4 +69,4 @@ jobs:
       #   with:
       #     custom-command: "npx @percy/cli upload ./test/test_images"
       #   env:
-      #     PERCY_TOKEN: ${{ secrets.PERCY_LEGOLASPROCESSES }}
+      #     PERCY_TOKEN: ${{ secrets.PERCY_TRANSFORM_SPECIFICATIONS }}

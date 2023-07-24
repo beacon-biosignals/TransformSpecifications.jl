@@ -1,11 +1,11 @@
-using LegolasProcesses
+using TransformSpecifications
 using Documenter
 
-makedocs(; modules=[LegolasProcesses],
-         sitename="LegolasProcesses.jl",
+makedocs(; modules=[TransformSpecifications],
+         sitename="TransformSpecifications.jl",
          authors="Beacon Biosignals",
          pages=["API Documentation" => "index.md"],
          strict=true)
 
-deploydocs(; repo="github.com/beacon-biosignals/LegolasProcesses.jl.git", push_preview=true,
+deploydocs(; repo="github.com/beacon-biosignals/TransformSpecifications.jl.git", push_preview=true,
            devbranch="main")

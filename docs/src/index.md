@@ -1,13 +1,13 @@
-# LegolasProcesses.jl
+# TransformSpecifications.jl
 
 ```@autodocs
-Modules = [LegolasProcesses]
+Modules = [TransformSpecifications]
 Private = false
 ```
 
 ## Non-exported functions and types
 
 ```@autodocs
-Modules = [LegolasProcesses]
+Modules = [TransformSpecifications]
 Public = false
 ```
