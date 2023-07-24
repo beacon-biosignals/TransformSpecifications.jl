@@ -220,13 +220,13 @@ end
 Check if `ntt` meets the definition of an [`identity_no_throw_transform`](@ref).
 """
 function is_identity_no_throw_transform(ntt::NoThrowTransform)
-    if input_specification(ntt) != output_specification(ntt)
+    if ntt.input_specification != ntt.output_specification
         @debug "Input and output schemas are not identical: $ntt"
         return false
     end
     is_identity = isequal(ntt.transform_fn, identity_process_result_transform)
     if !is_identity
-        @debug "`transform_fn` is not `identity_process_result_transform`"
+        @debug "`transform_fn` (`$(ntt.transform_fn)`) is not `identity_process_result_transform`"
     end
     return is_identity
 end

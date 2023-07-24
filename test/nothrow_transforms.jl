@@ -86,7 +86,7 @@ end
     result = transform!(ntt, nonconforming_input_record)
     @test !nothrow_succeeded(result)
     @test isequal(only(result.violations),
-                  """Record doesn't conform to input schema SchemaAV1. Details: ArgumentError("Invalid value set for field `foo`, expected String, got a value of type Missing (missing)")""")
+                  """Input doesn't conform to expected specification SchemaAV1. Details: ArgumentError("Invalid value set for field `foo`, expected String, got a value of type Missing (missing)")""")
 
     conforming_input_record = SchemaCV1(; foo="rad")
     @test !(conforming_input_record isa input_specification(ntt))
@@ -107,17 +107,17 @@ end
     ntt_a = NoThrowTransform(SchemaAV1, SchemaBV1, test_transform_fn)
     @test !is_identity_no_throw_transform(ntt_a)
     @test_logs (:debug,
-                "Input and output schemas are not identical: NoThrowTransform (input: SchemaAV1; output: SchemaBV1; ntt: test_transform_fn)") min_level = Logging.Debug !is_identity_no_throw_transform(ntt_a)
+                "Input and output schemas are not identical: NoThrowTransform{SchemaAV1,SchemaBV1}: `test_transform_fn`") min_level = Logging.Debug !is_identity_no_throw_transform(ntt_a)
 
     ntt_b = NoThrowTransform(SchemaBV1, SchemaBV1, test_transform_fn)
     @test !is_identity_no_throw_transform(ntt_b)
-    @test @test_logs (:debug, "`transform_fn` is not `identity_ntt_result_transform`") min_level = Logging.Debug match_mode = :any !is_identity_no_throw_transform(ntt_b)
+    @test @test_logs (:debug, "`transform_fn` (`test_transform_fn`) is not `identity_process_result_transform`") min_level = Logging.Debug match_mode = :any !is_identity_no_throw_transform(ntt_b)
 
     ntt_c = identity_no_throw_transform(SchemaAV1)
     @test is_identity_no_throw_transform(ntt_c)
 
     ntt_d = NoThrowTransform(SchemaAV1, SchemaAV1,
-                                 TransformSpecifications.identity_ntt_result_transform)
+                                 TransformSpecifications.identity_process_result_transform)
     @test is_identity_no_throw_transform(ntt_d)
 end
 
