@@ -178,13 +178,15 @@ function transform!(ntt::NoThrowTransform, input)
         # TODO-future: pull this out into a `interpret_input` function
         input_specification(ntt)(input)
     catch e
+        # rethrow(e)
         return NoThrowResult(;
                              violations="Input doesn't conform to expected specification for $(input_specification(ntt)). Details: " *
                                         string(e))
     end
     try
         return ntt.transform_fn(_input)
-    catch
+    catch e
+        # rethrow(e)
         return NoThrowResult(;
                              violations="Unexpected transform violation for $(input_specification(ntt)). Details: " *
                                         string(e))

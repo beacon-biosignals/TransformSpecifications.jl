@@ -82,16 +82,30 @@ end
     @test nothrow_succeeded(result)
     @test result isa NoThrowResult{SchemaBV1}
 
-    nonconforming_input_record = SchemaBV1(; name="rad")
-    result = transform!(ntt, nonconforming_input_record)
-    @test !nothrow_succeeded(result)
-    @test isequal(only(result.violations),
-                  """Input doesn't conform to expected specification SchemaAV1. Details: ArgumentError("Invalid value set for field `foo`, expected String, got a value of type Missing (missing)")""")
-
     conforming_input_record = SchemaCV1(; foo="rad")
     @test !(conforming_input_record isa input_specification(ntt))
     result = transform!(ntt, conforming_input_record)
     @test nothrow_succeeded(result)
+
+    nonconforming_input_record = SchemaBV1(; name="rad")
+    result = transform!(ntt, nonconforming_input_record)
+    @test !nothrow_succeeded(result)
+    @test isequal(only(result.violations),
+                  "Input doesn't conform to expected specification for SchemaAV1. Details: ArgumentError(\"Invalid value set for field `foo`, expected String, got a value of type Missing (missing)\")")
+
+    ntt_expected_throw = NoThrowTransform(SchemaAV1, SchemaBV1,
+                                          _ -> NoThrowResult(;
+                                                             violations="oh no failure is inevitable"))
+    result = transform!(ntt_expected_throw, input_record)
+    @test !nothrow_succeeded(result)
+    @test isequal(only(result.violations), "oh no failure is inevitable")
+
+    ntt_unexpected_throw = NoThrowTransform(SchemaAV1, SchemaBV1,
+                                            _ -> throw("Oh no, an unexpected exception---if only we'd checked for it and returned a NoThrowResult{Missing} instead!"))
+    result = transform!(ntt_unexpected_throw, input_record)
+    @test !nothrow_succeeded(result)
+    @test isequal(only(result.violations),
+                  "Unexpected transform violation for SchemaAV1. Details: Oh no, an unexpected exception---if only we'd checked for it and returned a NoThrowResult{Missing} instead!")
 
     # Test Base extensions
     fn = _ -> NoThrowResult(SchemaBV1(; name="yay"))
@@ -105,7 +119,7 @@ end
 @testset "`transform` vs `transform!`" begin
     ntt = NoThrowTransform(SchemaAV1, SchemaAV1,
                            r -> NoThrowResult(push!(r.list, 122)))
-    input_a = SchemaAV1(foo="a")
+    input_a = SchemaAV1(; foo="a")
 
     # Mutating
     input = SchemaAV1(; foo="rabbit")
