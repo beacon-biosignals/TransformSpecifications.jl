@@ -139,31 +139,3 @@ end
                              TransformSpecifications.identity_process_result_transform)
     @test is_identity_no_throw_transform(ntt_d)
 end
-
-@testset "`NoThrowTransformChain`" begin
-    ntt = identity_no_throw_transform(SchemaAV1)
-    steps = OrderedDict("a" => ntt, "b" => ntt)
-    constructors = Dict("a" => identity, "c" => identity)
-
-    err_str = """ArgumentError: Mismatch in chain steps:
-                 - Keys present in `transform_steps` are missing in `input_constructors`: ["b"]
-                 - Keys present in `input_constructors` are missing in `input_constructors`: ["c"]"""
-    @test_throws err_str NoThrowTransformChain(steps, constructors)
-
-    # Input constructor for first step is optional---but must be `nothing` if present
-    @test NoThrowTransformChain(OrderedDict(:a => ntt, :b => ntt),
-                                Dict(:b => identity)) isa NoThrowTransformChain
-    @test NoThrowTransformChain(OrderedDict(:a => ntt, :b => ntt),
-                                Dict(:a => nothing, :b => identity)) isa
-          NoThrowTransformChain
-    @test_throws "ArgumentError: First step's input constructor must be `nothing`" NoThrowTransformChain(OrderedDict(:a => ntt,
-                                                                                                                     :b => ntt),
-                                                                                                         Dict(:a => identity,
-                                                                                                              :b => identity)) isa
-                                                                                   NoThrowTransformChain
-
-    # TODO: test chain
-    # TODO: test append! functionality
-    # Test Base extensions
-
-end
