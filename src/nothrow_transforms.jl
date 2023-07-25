@@ -166,6 +166,12 @@ function output_specification(ntt::NoThrowTransform)
     return Union{NoThrowResult{Missing},NoThrowResult{ntt.output_specification}}
 end
 
+#TODO-future: could upstream a version of `Base.convert(spec::Type{<:Legolas.AbstractRecord}, input)` and use convert in place of this new function
+interpret_input(::Type{T}, input::T) where {T} = input
+interpret_input(::Type{T}, input::T) where {T<:Legolas.AbstractRecord} = input
+interpret_input(spec::Type{<:Legolas.AbstractRecord}, input) = (spec)(input)
+interpret_input(spec, input) = convert(spec, input)
+
 """
     transform!(ntt::NoThrowTransform, input)
 
@@ -175,8 +181,8 @@ return `NoThrowResult{Missing}` with the cause of failure noted in the `violatio
 """
 function transform!(ntt::NoThrowTransform, input)
     _input = try
-        # TODO-future: pull this out into a `interpret_input` function
-        input_specification(ntt)(input)
+        spec = input_specification(ntt)
+        interpret_input(spec, input)
     catch e
         # rethrow(e)
         return NoThrowResult(;
