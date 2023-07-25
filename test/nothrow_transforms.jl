@@ -130,12 +130,12 @@ end
     ntt_b = NoThrowTransform(SchemaBV1, SchemaBV1, test_transform_fn)
     @test !is_identity_no_throw_transform(ntt_b)
     @test @test_logs (:debug,
-                      "`transform_fn` (`test_transform_fn`) is not `identity_process_result_transform`") min_level = Logging.Debug match_mode = :any !is_identity_no_throw_transform(ntt_b)
+                      "`transform_fn` (`test_transform_fn`) is not `identity_no_throw_result`") min_level = Logging.Debug match_mode = :any !is_identity_no_throw_transform(ntt_b)
 
     ntt_c = identity_no_throw_transform(SchemaAV1)
     @test is_identity_no_throw_transform(ntt_c)
 
     ntt_d = NoThrowTransform(SchemaAV1, SchemaAV1,
-                             TransformSpecifications.identity_process_result_transform)
+                             TransformSpecifications.identity_no_throw_result)
     @test is_identity_no_throw_transform(ntt_d)
 end

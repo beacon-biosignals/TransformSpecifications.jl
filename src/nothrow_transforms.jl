@@ -174,17 +174,21 @@ does not conform to `input_specification(ntt)` or `ntt.transform_fn` fails, will
 return `NoThrowResult{Missing}` with the cause of failure noted in the `violations`.
 """
 function transform!(ntt::NoThrowTransform, input)
-    try
-        # Check that input conforms to input schema (doesn't matter if it _actually_
-        # is of the same schema type, or a child, or whatever. if it conforms? it's valid.)
-        # TODO-help: is there a better way to do this? e.g. to use Legolas.find_violations instead of this?
+    _input = try
+        # TODO-future: pull this out into a `interpret_input` function
         input_specification(ntt)(input)
     catch e
         return NoThrowResult(;
-                             violations="Input doesn't conform to expected specification $(input_specification(ntt)). Details: " *
+                             violations="Input doesn't conform to expected specification for $(input_specification(ntt)). Details: " *
                                         string(e))
     end
-    return ntt.transform_fn(input)
+    try
+        return ntt.transform_fn(_input)
+    catch
+        return NoThrowResult(;
+                             violations="Unexpected transform violation for $(input_specification(ntt)). Details: " *
+                                        string(e))
+    end
 end
 
 function Base.show(io::IO, p::NoThrowTransform)
@@ -193,26 +197,23 @@ function Base.show(io::IO, p::NoThrowTransform)
 end
 
 """
-    identity_no_throw_transform(io_schema::Type{<:Legolas.AbstractRecord}) -> NoThrowTransform{io_schema}
+    identity_no_throw_transform(specification) -> NoThrowTransform{specification}
 
-Create [`NoThrowTransform`](@ref) where `input_specification==output_specification` and `transform_fn`
-result is a `NoThrowResult{io_schema}`.
-
-Required to be the first element in a [`NoThrowTransformChain`](@ref).
+Create [`NoThrowTransform`](@ref) where `input_specification==output_specification==specification` and `transform_fn`
+result is a `NoThrowResult{specification}`.
 
 See also: [`is_identity_no_throw_transform`](@ref)
 """
-function identity_no_throw_transform(io_schema::Type{<:Legolas.AbstractRecord})
-    return NoThrowTransform(io_schema, io_schema, identity_process_result_transform)
+function identity_no_throw_transform(specification)
+    return NoThrowTransform(specification, specification, identity_no_throw_result)
 end
 
-#TODO-help: i don't really want to have to define a function for this, I want to
-# `just` use `NoThrowResult` instead of a defined function from w/in `identity_no_throw_transform`, but the construtor for
-# NoThrowResult is not recognized as conforming to the `::Function` type on contruction :(
-# TODO: ALSO the name for this is terrible. hold off on bikeshedding until overall package rename is complete
-function identity_process_result_transform(io_schema::Type{<:Legolas.AbstractRecord})
-    return NoThrowResult(r)
-end
+"""
+    identity_no_throw_result(result) -> NoThrowResult
+
+Return `NoThrowResult{T}` where `T=typeof(result)`
+"""
+identity_no_throw_result(result) = NoThrowResult(result)
 
 """
     is_identity_no_throw_transform(ntt::NoThrowTransform) -> Bool
@@ -224,9 +225,9 @@ function is_identity_no_throw_transform(ntt::NoThrowTransform)
         @debug "Input and output schemas are not identical: $ntt"
         return false
     end
-    is_identity = isequal(ntt.transform_fn, identity_process_result_transform)
+    is_identity = isequal(ntt.transform_fn, identity_no_throw_result)
     if !is_identity
-        @debug "`transform_fn` (`$(ntt.transform_fn)`) is not `identity_process_result_transform`"
+        @debug "`transform_fn` (`$(ntt.transform_fn)`) is not `identity_no_throw_result`"
     end
     return is_identity
 end
