@@ -1,6 +1,9 @@
 using TransformSpecifications
 using Documenter
 
+DocMeta.setdocmeta!(TransformSpecifications, :DocTestSetup,
+                    :(using TransformSpecifications, Legolas); recursive=true)
+
 makedocs(; modules=[TransformSpecifications],
          sitename="TransformSpecifications.jl",
          authors="Beacon Biosignals",
