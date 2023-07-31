@@ -47,8 +47,8 @@ end
     @test typeof(result_with_violations) == NoThrowResult{Missing}
 
     # Passing in a single warning or violation auto-generates a vector of warnings/violations
-    @test isequal(NoThrowResult(; warnings="Foo", result),
-                  NoThrowResult(; warnings=["Foo"], result))
+    @test isequal(NoThrowResult(; warnings="Foo", result=record),
+                  NoThrowResult(; warnings=["Foo"], result=record))
     @test isequal(NoThrowResult(; violations="Bar"),
                   NoThrowResult(; violations=["Bar"]))
     o = NoThrowResult(; warnings="Foo", violations="Bar")
@@ -69,6 +69,8 @@ end
     # Test Base extensions
     @test NoThrowResult(record) == NoThrowResult(record)
     @test isequal(NoThrowResult(record), NoThrowResult(record))
+    @test ismissing(NoThrowResult(; violations="Foo") == NoThrowResult(; violations="Foo"))
+    @test isequal(NoThrowResult(; violations="Foo"), NoThrowResult(; violations="Foo"))
 
     @testset "`NoThrowTransform{NoThrowTransform{T}}`" begin
         record = NoThrowResult(SchemaAV1(; foo="whee"); warnings="avast")
@@ -78,9 +80,22 @@ end
         @test result isa NoThrowResult{SchemaAV1}
         @test result.warnings == ["avast"]
 
-        result_with_warnings = NoThrowResult(record; warnings="ahoy")
+        result_with_warnings = NoThrowResult(record; warnings=["ahoy"])
         @test result_with_warnings isa NoThrowResult{SchemaAV1}
         @test result_with_warnings.warnings == ["avast", "ahoy"]
+
+        # All constructor options are equivalent
+        @test NoThrowResult(; warnings=["Foo"], result) ==
+              NoThrowResult(result; warnings=["Foo"]) ==
+              NoThrowResult(; warnings="Foo", result)
+
+        # Nested results work
+        nested_result = NoThrowResult(33; warnings="0")
+        for i in 1:10
+            nested_result = NoThrowResult(nested_result; warnings="$i")
+        end
+        @test nested_result isa NoThrowResult{Int}
+        @test nested_result.warnings == ["$i" for i in 0:10]
     end
 
     @testset "`NoThrowTransform{NoThrowTransform{Missing}}`" begin
@@ -88,6 +103,9 @@ end
         @test record isa NoThrowResult{Missing}
         result_with_missing = NoThrowResult(record)
         @test result_with_missing isa NoThrowResult{Missing}
+
+        result_from_kwargs = NoThrowResult(; result=record)
+        @test isequal(result_with_missing, result_from_kwargs)
 
         result_all_the_fixings = NoThrowResult(NoThrowResult(;
                                                              violations="why not take a crazy chance",
@@ -98,6 +116,20 @@ end
         @test result_all_the_fixings.violations ==
               ["why not take a crazy chance", "why not do a crazy dance"]
         @test result_all_the_fixings.warnings == ["(why not)", "(why not)"]
+
+        # All constructor options are equivalent
+        @test isequal(NoThrowResult(; violations=["Foo"]),
+                      NoThrowResult(missing; violations=["Foo"]))
+        @test isequal(NoThrowResult(; violations=["Foo"]),
+                      NoThrowResult(; violations="Foo"))
+
+        # Nested results work
+        nested_result = NoThrowResult(; violations="0")
+        for i in 1:10
+            nested_result = NoThrowResult(nested_result; violations="$i")
+        end
+        @test nested_result isa NoThrowResult{Missing}
+        @test nested_result.violations == ["$i" for i in 0:10]
     end
 end
 

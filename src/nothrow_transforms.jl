@@ -55,13 +55,12 @@ NoThrowResult{Missing}: Transform failed
 ```
 """
 struct NoThrowResult{T}
-    warnings::Vector{String}
-    violations::Vector{String}
     result::T
+    violations::Vector{String}
+    warnings::Vector{String}
 
-    function NoThrowResult(; warnings::Union{String,Vector{String}}=String[],
-                           violations::Union{String,Vector{String}}=String[],
-                           result::T=missing) where T
+    function NoThrowResult(result::T, violations::Union{String,Vector{String}},
+                           warnings::Union{String,Vector{String}}) where {T}
         if ismissing(result) && isempty(violations)
             throw(ArgumentError("Invalid construction: either `result` must be non-missing \
                                  OR `violations` must be non-empty."))
@@ -72,19 +71,23 @@ struct NoThrowResult{T}
         end
         warnings isa Vector{String} || (warnings = [warnings])
         violations isa Vector{String} || (violations = [violations])
-        return new{T}(warnings, violations, result)
+        return new{T}(result, violations, warnings)
     end
 end
 
-function NoThrowResult(result; warnings=String[], violations=String[])
-    return NoThrowResult(; result, warnings, violations)
+function NoThrowResult(; result=missing, violations=String[], warnings=String[])
+    return NoThrowResult(result, violations, warnings)
 end
 
-function NoThrowResult(result::NoThrowResult{T}; warnings=String[],
-                       violations=String[]) where {T}
+function NoThrowResult(result; violations=String[], warnings=String[])
+    return NoThrowResult(result, violations, warnings)
+end
+
+function NoThrowResult(result::NoThrowResult, violations::Union{String,Vector{String}},
+                       warnings::Union{String,Vector{String}})
     warnings = vcat(result.warnings, warnings)
     violations = vcat(result.violations, violations)
-    return NoThrowResult(; result.result, warnings, violations)
+    return NoThrowResult(result.result, violations, warnings)
 end
 
 function Base.show(io::IO, r::NoThrowResult)
