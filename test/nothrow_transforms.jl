@@ -69,6 +69,36 @@ end
     # Test Base extensions
     @test NoThrowResult(record) == NoThrowResult(record)
     @test isequal(NoThrowResult(record), NoThrowResult(record))
+
+    @testset "`NoThrowTransform{NoThrowTransform{T}}`" begin
+        record = NoThrowResult(SchemaAV1(; foo="whee"); warnings="avast")
+        @test record isa NoThrowResult{SchemaAV1}
+
+        result = NoThrowResult(record)
+        @test result isa NoThrowResult{SchemaAV1}
+        @test result.warnings == ["avast"]
+
+        result_with_warnings = NoThrowResult(record; warnings="ahoy")
+        @test result_with_warnings isa NoThrowResult{SchemaAV1}
+        @test result_with_warnings.warnings == ["avast", "ahoy"]
+    end
+
+    @testset "`NoThrowTransform{NoThrowTransform{Missing}}`" begin
+        record = NoThrowResult(missing; violations="violation a", warnings="warnings a")
+        @test record isa NoThrowResult{Missing}
+        result_with_missing = NoThrowResult(record)
+        @test result_with_missing isa NoThrowResult{Missing}
+
+        result_all_the_fixings = NoThrowResult(NoThrowResult(;
+                                                             violations="why not take a crazy chance",
+                                                             warnings="(why not)");
+                                               violations="why not do a crazy dance",
+                                               warnings="(why not)")
+        @test result_all_the_fixings isa NoThrowResult{Missing}
+        @test result_all_the_fixings.violations ==
+              ["why not take a crazy chance", "why not do a crazy dance"]
+        @test result_all_the_fixings.warnings == ["(why not)", "(why not)"]
+    end
 end
 
 @testset "`NoThrowTransform`" begin

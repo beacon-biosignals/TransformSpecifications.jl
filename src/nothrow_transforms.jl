@@ -61,7 +61,7 @@ struct NoThrowResult{T}
 
     function NoThrowResult(; warnings::Union{String,Vector{String}}=String[],
                            violations::Union{String,Vector{String}}=String[],
-                           result=missing)
+                           result::T=missing) where T
         if ismissing(result) && isempty(violations)
             throw(ArgumentError("Invalid construction: either `result` must be non-missing \
                                  OR `violations` must be non-empty."))
@@ -72,12 +72,19 @@ struct NoThrowResult{T}
         end
         warnings isa Vector{String} || (warnings = [warnings])
         violations isa Vector{String} || (violations = [violations])
-        return new{typeof(result)}(warnings, violations, result)
+        return new{T}(warnings, violations, result)
     end
 end
 
 function NoThrowResult(result; warnings=String[], violations=String[])
     return NoThrowResult(; result, warnings, violations)
+end
+
+function NoThrowResult(result::NoThrowResult{T}; warnings=String[],
+                       violations=String[]) where {T}
+    warnings = vcat(result.warnings, warnings)
+    violations = vcat(result.violations, violations)
+    return NoThrowResult(; result.result, warnings, violations)
 end
 
 function Base.show(io::IO, r::NoThrowResult)
