@@ -186,13 +186,13 @@ NoThrowResult{Missing}: Transform failed
 Base.@kwdef struct NoThrowTransform{T<:Type,U<:Type} <: AbstractTransformSpecification
     input_specification::T
     output_specification::U
-    transform_fn::Function  # TODO-help: any way to validate the function signature (in type or on construction), to ensure takes in input schema as specified, spits out output schema?
+    transform_fn
 end
 
 input_specification(ntt::NoThrowTransform) = ntt.input_specification
 
 function output_specification(ntt::NoThrowTransform)
-    return Union{NoThrowResult{Missing},NoThrowResult{ntt.output_specification}}
+    return NoThrowResult{ntt.output_specification}
 end
 
 #TODO-future: could upstream a version of `Base.convert(spec::Type{<:Legolas.AbstractRecord}, input)` and use convert in place of this new function

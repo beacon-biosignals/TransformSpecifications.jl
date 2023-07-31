@@ -138,7 +138,7 @@ end
                            _ -> NoThrowResult(SchemaBV1(;
                                                         name="yay")))
     @test input_specification(ntt) == SchemaAV1
-    @test NoThrowResult{SchemaBV1} <: output_specification(ntt)
+    @test output_specification(ntt) == NoThrowResult{SchemaBV1}
     input_record = SchemaAV1(; foo="rabbit")
     result = transform!(ntt, input_record)
     @test nothrow_succeeded(result)
