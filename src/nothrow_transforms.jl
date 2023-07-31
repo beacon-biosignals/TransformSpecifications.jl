@@ -186,7 +186,7 @@ NoThrowResult{Missing}: Transform failed
 Base.@kwdef struct NoThrowTransform{T<:Type,U<:Type} <: AbstractTransformSpecification
     input_specification::T
     output_specification::U
-    transform_fn
+    transform_fn::Any
 end
 
 input_specification(ntt::NoThrowTransform) = ntt.input_specification
@@ -274,9 +274,7 @@ end
 #####
 
 for pred in (:(==), :(isequal)),
-    T in
-    [AbstractTransformSpecification, NoThrowResult, NoThrowTransform]
-
+    T in [AbstractTransformSpecification, NoThrowResult, NoThrowTransform]
     @eval function Base.$pred(x::$T, y::$T)
         return all(p -> $pred(getproperty(x, p), getproperty(y, p)), fieldnames($T))
     end
