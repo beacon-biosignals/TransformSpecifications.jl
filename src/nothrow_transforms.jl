@@ -219,7 +219,9 @@ function transform!(ntt::NoThrowTransform, input)
                                         string(e))
     end
     try
-        return ntt.transform_fn(_input)
+        Out = output_specification(ntt)
+        result = ntt.transform_fn(_input)::Out
+        return NoThrowResult(result)
     catch e
         # rethrow(e)
         return NoThrowResult(;
