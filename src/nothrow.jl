@@ -90,6 +90,8 @@ function NoThrowResult(result::NoThrowResult, violations::Union{String,Vector{St
     return NoThrowResult(result.result, violations, warnings)
 end
 
+result_type(::Type{NoThrowResult{T}}) where {T} = T
+
 function Base.show(io::IO, r::NoThrowResult)
     succeeded = nothrow_succeeded(r)
     str = "$(typeof(r)): Transform $(succeeded ? "succeeded" : "failed")\n"
@@ -267,7 +269,7 @@ end
 
 function Base.show(io::IO, p::NoThrowTransform)
     return print(io,
-                 "NoThrowTransform{$(input_specification(p)),$(output_specification(p.transform_spec))}: `$(p.transform_spec.transform_fn)`")
+                 "NoThrowTransform{$(input_specification(p)),$(result_type(output_specification(p)))}: `$(p.transform_spec.transform_fn)`")
 end
 
 """
@@ -315,7 +317,7 @@ identity_no_throw_result(result) = NoThrowResult(result)
 Check if `ntt` meets the definition of an [`identity_no_throw_transform`](@ref).
 """
 function is_identity_no_throw_transform(ntt::NoThrowTransform)
-    if input_specification(ntt) != output_specification(ntt.transform_spec)
+    if input_specification(ntt) != result_type(output_specification(ntt))
         @debug "Input and output schemas are not identical: $ntt"
         return false
     end

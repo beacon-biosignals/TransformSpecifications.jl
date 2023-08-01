@@ -21,7 +21,7 @@ export NoThrowResult, NoThrowTransform, nothrow_succeeded, identity_no_throw_tra
        is_identity_no_throw_transform, transform_unwrapped!, transform_unwrapped
 
 include("nothrow_chain.jl")
-export NoThrowTransformChain
+export NoThrowTransformChain, ChainStep
 
 #####
 ##### Shared utilities

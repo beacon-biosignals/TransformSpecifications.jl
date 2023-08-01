@@ -1,28 +1,25 @@
-# @schema "schema-a" SchemaA
-# @version SchemaAV1 begin
-#     foo::String
-#     list::Vector{Int} = [33]
-# end
+@schema "schema-a" SchemaA
+@version SchemaAV1 begin
+    foo::String
+    list::Vector{Int} = [33]
+end
 
-# @schema "schema-b" SchemaB
-# @version SchemaBV1 begin
-#     name::String
-# end
+@schema "schema-b" SchemaB
+@version SchemaBV1 begin
+    name::String
+end
 
-# @schema "schema-c" SchemaC
-# @version SchemaCV1 begin
-#     foo::String
-# end
+@schema "schema-c" SchemaC
+@version SchemaCV1 begin
+    foo::String
+end
 
 @testset "`NoThrowTransformChain`" begin
     ntt = identity_no_throw_transform(SchemaAV1)
-    steps = OrderedDict("a" => ntt, "b" => ntt)
-    constructors = Dict("a" => identity, "c" => identity)
+    steps = [ChainStep("a", ntt, nothing), ChainStep("b", ntt, identity), ChainStep("c", ntt, identity), ]
+    chain = NoThrowTransformChain(steps)
+    @test chain isa NoThrowTransformChain
 
-    err_str = """ArgumentError: Mismatch in chain steps:
-                 - Keys present in `transform_steps` are missing in `input_constructors`: ["b"]
-                 - Keys present in `input_constructors` are missing in `input_constructors`: ["c"]"""
-    @test_throws err_str NoThrowTransformChain(steps, constructors)
 
     # Input constructor for first step is optional---but must be `nothing` if present
     @test NoThrowTransformChain(OrderedDict(:a => ntt, :b => ntt),

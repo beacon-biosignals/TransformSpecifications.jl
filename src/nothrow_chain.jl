@@ -1,44 +1,57 @@
 #####
 ##### `NoThrowTransformChain`
 #####
-# TODO-future: implement regular TransformChain that is allowed to throw...or decide to make this one support both
-# Note that this chain
+
+"""
+    ChainStep
+
+Helper struct, used to construct [`NoThrowTransformChain`](@ref)s. Requires fields
+* `name::String`: Name of step, must be unique across a constructed chain
+* `transform_spec::AbstractTransformSpecification`: Transform applied by step
+* `input_constructor`: Function that takes in a Dictionary with keys that are the
+    names of upstream steps; the value of each of these keys is the output of that
+    upstream_step, as specified by `output_specification(upstream_step)`. The constructor
+    should return a `NamedTuple` that can be converted to specification
+    `input_specification(transform_spec)` via [interpret_input`](@ref).
+"""
+struct ChainStep
+    name::String
+    transform_spec::AbstractTransformSpecification
+    input_constructor::Any
+end
 
 """
     NoThrowTransformChain <: AbstractTransformSpecification
-    NoThrowTransformChain(steps::Vector{<:Tuple{Symbol,AbstractTransformSpecification, Function}})
+    NoThrowTransformChain(steps::Vector{ChainStep})
 
-Processing component that runs a sequence of [`AbstractTransformSpecification`](@ref) `transform_steps`,
-by [`transform!`](@ref)ing each step in order. The chain's `input_specification` is that of the
-first element in `transform_steps`; the chain's `output_specification` is that of the last
-element in the `transform_steps`.
+Processing component that runs a sequence of [`AbstractTransformSpecification`](@ref) steps,
+by calling [`transform!`](@ref) on each step in order. The chain's `input_specification` is that of the
+first element in `step_transforms`; the chain's `output_specification` is that of the last
+element in the `step_transforms`.
 
-The `transform_steps` are stored internally as an `OrderedDict{:Symbol,AbstractTransformSpecification}`
-of `<step name> => <step transform>`, along with the instructions (`input_constructors`)
+The steps are stored internally as an `OrderedDict{:String,AbstractTransformSpecification}`
+of `<step name> => <step transform>`, along with the instructions (`step_input_constructors`)
 for constructing the input to each step as a function of all previous ouput component
-results. Each key in `transform_steps` has a corresponding key in `input_constructors`.
+results. Each key in `step_transforms` has a corresponding key in `step_input_constructors`.
 (This input construction approach/type may change in an upcoming release.)
 
-The constructor that takes in series of `steps` expects steps to take the format
-`(name, transform, input_constructor)`.
-
 To grant downstream access to all fields passed into the first step, the first step should
-be an identity transform, i.e., `is_identity_no_throw_transform(step)` should return true. Additionally,
+be an identity transform, i.e., `is_identity_no_throw_transform(first(steps))` should return true. Additionally,
 as the input to the first step is the input to the chain at large, the chain does not construct
 the first step's input before calling the first step, and therefore the first step'same
 input construction function must be `nothing`.
 
 !!! warn
-    It is the caller's responsibility to only implement a DAG, and to not introduce
-    recursion by constructing a chain that includes that same chain as a processing
-    step! To quote Tom Lehrer, "[you ask a silly question, you get a silly answer](https://youtu.be/zWPn3esuDgU?t=189)."
+    It is the caller's responsibility to implement a DAG, and to not introduce
+    any recursion or cycles. What will happen if you do? To quote Tom Lehrer,
+    "[well, you ask a silly question, you get a silly answer](https://youtu.be/zWPn3esuDgU?t=189)!"
 
 ## Fields
 
-- `transform_steps::OrderedDict{Symbol,AbstractTransformSpecification}` Ordered processing steps
-- `input_constructors::Dict{Symbol,Function}` Dictionary with functions for constructing the input
-    for each key in `transform_steps` as a function that takes in a Dict{Symbol,NoThrowResult}
-    of all upstream `transform_steps` results.
+- `step_transforms::OrderedDict{String,AbstractTransformSpecification}` Ordered processing steps
+- `step_input_constructors::Dict{String,Function}` Dictionary with functions for constructing the input
+    for each key in `step_transforms` as a function that takes in a Dict{String,NoThrowResult}
+    of all upstream `step_transforms` results.
 
 ## Example
 
@@ -47,97 +60,113 @@ TODO-future
 ```
 """
 struct NoThrowTransformChain <: AbstractTransformSpecification
-    transform_steps::OrderedDict{Symbol,AbstractTransformSpecification}
-    input_constructors::Dict{Symbol,Union{Nothing,Function}}
+    step_transforms::OrderedDict{String,NoThrowTransform}
+    step_input_constructors::Dict{String,Any}
+    io_mapping::Dict{String,Dict{Symbol,Any}}
 
-    function NoThrowTransformChain(transform_steps::OrderedDict,
-                                   input_constructors::Dict)
-        first_key = first(keys(transform_steps))
-        constructor_keys = push!(Set(collect(keys(input_constructors))), first_key)
-        if !issetequal(keys(transform_steps), constructor_keys)
-            a = collect(setdiff(keys(transform_steps), keys(input_constructors)))
-            b = collect(setdiff(keys(input_constructors), keys(transform_steps)))
-            str = "Mismatch in chain steps:"
-            isempty(a) ||
-                (str *= "\n- Keys present in `transform_steps` are missing in `input_constructors`: $a")
-            isempty(b) ||
-                (str *= "\n- Keys present in `input_constructors` are missing in `input_constructors`: $b")
-            throw(ArgumentError(str))
+    function NoThrowTransformChain(init_step::ChainStep)
+        if !isnothing(init_step.input_constructor)
+            throw(ArgumentError("Initial step's input constructor must be `nothing` (`$(init_step)`)"))
         end
-        if haskey(input_constructors, first_key) &&
-           !isnothing(input_constructors[first_key])
-            throw(ArgumentError("First step's input constructor must be `nothing`"))
-        end
-        # TODO: validate input_constructors dag!
-        # TODO: other validation!
-        return new(transform_steps, input_constructors)
+        transform_spec = init_step.transform_spec isa NoThrowTransform ?
+                         init_step.transform_spec : NoThrowTransform(transform_spec)
+        step_transforms = OrderedDict(init_step.name => transform_spec)
+        step_input_constructors = Dict(init_step.name => nothing)
+        io_mapping = Dict(init_step.name => _field_map(output_specification(transform_spec)))
+        return new(step_transforms, step_input_constructors, io_mapping)
     end
 end
 
-const ChainStepType = Tuple{Symbol,AbstractTransformSpecification,
-                            Union{Nothing,Function}}
-
-function NoThrowTransformChain(steps::Vector{<:ChainStepType})
-    transform_steps = OrderedDict{Symbol,AbstractTransformSpecification}()
-    input_constructors = Dict{Symbol,Union{Nothing,Function}}()
-    for step in steps
-        _add_step_to_chain(transform_steps, input_constructors, step)
+function _field_map(specification; recurse_into_legolas_schemas::Bool=false)
+    m = map(zip(fieldnames(specification), fieldtypes(specification))) do (name, type)
+        # if recurse_into_legolas_schemas && type <: Legolas.AbstractRecord
+        #     # TODO-future: do this recursively? For now, only one layer deep
+        #     return _field_map(; recurse_into_legolas_schemas=false)
+        # end
+        return name => type
     end
-    return NoThrowTransformChain(transform_steps, input_constructors)
+    return Dict(m)
 end
 
-function _add_step_to_chain(transform_steps::OrderedDict{Symbol,
-                                                         AbstractTransformSpecification},
-                            input_constructors::Dict{Symbol,Union{Nothing,Function}},
-                            step::ChainStepType)
-    (key, transform, input_constructor) = step
-    haskey(transform_steps, key) &&
-        throw(ArgumentError("Key `$key` already exists in chain!"))
-    push!(transform_steps, key => transform)
-    push!(input_constructors, key => input_constructor) #TODO: first validate that these are possible...
+function NoThrowTransformChain(steps::Vector{<:ChainStep})
+    length(steps) == 0 &&
+        throw(ArgumentError("At least one step required to construct a chain"))
+    chain = NoThrowTransformChain(first(steps))
+    for step in steps[2:end]
+        push!(chain, step)
+    end
+    return chain
+end
+
+#TODO-Future: consider making a constructor that special-cases when taking in
+# a specification that has a single field (e.g., a Samples object or something)
+# instead of doing this version that is geared at named tuple creation
+function _validate_input_constructor(chain::NoThrowTransformChain, step_constructor)
+    # Do all the fields required by the constructor exist in the preceding steps' output?
+    mock_input = step_constructor(chain.io_mapping) # Will throw if any field doesn't exist
+
+    # Does the constructor construct something that will probably work for the input schema?
+    # No way to _really_ know without constructing it....but if the defined input is
+    # a Legolas schema, then we could probably guess if we were going to fail horribly.
+    # Going to save that for the future: assuming it will be caught at unit-test time
+    # for now.
+    # TODO-future: maybe take a stab at this, maybe don't!
     return nothing
 end
 
-function Base.append!(chain::NoThrowTransformChain, step::ChainStepType)
-    return _add_step_to_chain(chain.transform_steps, chain.input_constructors, step)
+function Base.push!(chain::NoThrowTransformChain, step::ChainStep)
+    # Safety first!
+    haskey(chain.step_transforms, step.name) &&
+        throw(ArgumentError("Key `$(step.name)` already exists in chain!"))
+    _validate_input_constructor(chain, step.input_constructor)
+
+    # Forge it!
+    push!(chain.step_transforms, step.name => step.transform_spec)
+    push!(chain.step_input_constructors, step.name => step.input_constructor)
+    return chain
 end
 
 """
-    input_specification(chain::NoThrowTransformChain) -> Type{<:Legolas.AbstractRecord}
+    input_specification(chain::NoThrowTransformChain)
 
-Return Legolas schema of record accepted as input to first step in `chain.transform_steps`.
+Return `input_specification` of first step in `chain`, which is the input specification
+of the entire chain.
+
+See also: [`output_specification`](@ref), [`NoThrowTransformChain`](@ref)
 """
-function input_specification(c::NoThrowTransformChain)
-    return first(c.transform_steps)[2].input_specification
+function input_specification(chain::NoThrowTransformChain)
+    return input_specification(first(chain.step_transforms)[2])
 end
 
 """
     output_specification(chain::NoThrowTransformChain) -> Type{<:Legolas.AbstractRecord}
 
-Return Legolas schema of record returned by last step in `chain.transform_steps`,
-which is the record returned by successful application of the entire chain.
+Return output_specification of last step in `chain`, which is the output specification
+of the entire chain.
+
+See also: [`input_specification`](@ref), [`NoThrowTransformChain`](@ref)
 """
 function output_specification(c::NoThrowTransformChain)
-    return last(c.transform_steps)[2].output_specification
+    return output_specification(last(c.step_transforms)[2])
 end
 
 """
     transform!(chain::NoThrowTransformChain, input)
 
-Return [`NoThrowResult`](@ref) of sequentially `transform!`ing all `chain.transform_steps`
-to `input`.
+Return [`NoThrowResult`](@ref) of sequentially [`transform!`](@ref)ing all
+`chain.step_transforms`, after passing `input` to the first step.
 
-Before each step (`key`), the step's `chain.input_constructors[key]` is called
-on the results of all previous processing steps, in order to construct input to
-the step that conforms to the step's requisite `input_specification(step)`.
+Before each step, that step's input constructor is called on the results of all
+previous processing steps; this constructor generates input that conforms to the
+step's `input_specification`.
 
-Initial step does not call input construction for itself, as chain input is passed directly
-into it.
+The initial step does not call an input constructor; instead, input to the chain
+is forward to it directly.
 """
 function transform!(chain::NoThrowTransformChain, input)
     warnings = String[]
-    component_results = OrderedDict{Symbol,Legolas.AbstractRecord}()
-    for (i_step, (name, step)) in enumerate(chain.transform_steps)
+    component_results = OrderedDict{String,Legolas.AbstractRecord}()
+    for (i_step, (name, step)) in enumerate(chain.step_transforms)
         @debug "Applying component `$name`..."
         input = if i_step == 1
             try
@@ -150,7 +179,7 @@ function transform!(chain::NoThrowTransformChain, input)
             end
         else
             # Construct
-            input_nt = chain.input_constructors[name](component_results)
+            input_nt = chain.step_input_constructors[name](component_results)
 
             # prob don't need this try/catch, as we can pass into the function as a
             # named tuple...but this way we know that it failed at this specific stage
@@ -173,12 +202,10 @@ function transform!(chain::NoThrowTransformChain, input)
 end
 
 function Base.show(io::IO, c::NoThrowTransformChain)
-    str = "NoThrowTransformChain:\n"
-    for (i, (k, v)) in enumerate(c.transform_steps)
-        bullet = i == 1 ? "🌱" : (i == length(c.transform_steps) ? "🌷" : "☀️")
-        str *= "  $bullet  $k ($(v.input_specification) => $(v.output_specification))\n"
+    str = "NoThrowTransformChain ($(input_specification(c)) => $(result_type(output_specification(c)))):\n"
+    for (i, (k, v)) in enumerate(c.step_transforms)
+        bullet = i == 1 ? "🌱" : (i == length(c.step_transforms) ? "🌷" : " ·") #"☀️ ")
+        str *= "  $bullet  $k: $(input_specification(v)) => $(output_specification(v.transform_spec)): `$(v.transform_spec.transform_fn)`\n"
     end
-    return print(io, str)
+    return print(io, chomp(str))
 end
-# TODO-future: support applying subsets of chain, with `init` option for passing in "upstream outputs" results
-# TODO-future: define where validation happens in this chain, and how
