@@ -33,21 +33,24 @@ end
     @testset "Nonconforming input fails" begin
         ts = TransformSpecification(SchemaAV1, SchemaBV1, _ -> SchemaBV1(; name="yay"))
         nonconforming_input_record = SchemaBV1(; name="rad")
-        @test_throws ArgumentError("Input doesn't conform to specification `SchemaAV1`") transform!(ts, nonconforming_input_record)
+        @test_throws ArgumentError("Input doesn't conform to specification `SchemaAV1`") transform!(ts,
+                                                                                                    nonconforming_input_record)
     end
 
     @testset "Nonconforming transform fails" begin
         input_record = SchemaAV1(; foo="rabbit")
         err_msg = "Oh no, an unexpected exception!"
-        ts_unexpected_throw = TransformSpecification(SchemaAV1, SchemaBV1,  _ -> throw(ErrorException(err_msg)))
+        ts_unexpected_throw = TransformSpecification(SchemaAV1, SchemaBV1,
+                                                     _ -> throw(ErrorException(err_msg)))
         @test_throws ErrorException(err_msg) transform!(ts_unexpected_throw, input_record)
     end
 
-    @testset "Nonconforming ouptut fails" begin
+    @testset "Nonconforming output fails" begin
         input_record = SchemaAV1(; foo="rabbit")
         ts_expected_throw = TransformSpecification(SchemaAV1, SchemaAV1,
-                                              _ -> SchemaBV1(; name="rad"))
-        @test_throws "Output doesn't conform to specification `SchemaAV1`; is instead a `SchemaBV1`" transform!(ts_expected_throw, input_record)
+                                                   _ -> SchemaBV1(; name="rad"))
+        @test_throws ErrorException("Output doesn't conform to specification `SchemaAV1`; is instead a `SchemaBV1`") transform!(ts_expected_throw,
+                                                                                                                                input_record)
     end
 
     @testset "Base extensions" begin
@@ -55,7 +58,7 @@ end
         fn = _ -> NoThrowResult(SchemaBV1(; name="yay"))
         @test TransformSpecification(SchemaAV1, SchemaBV1, fn) ==
               TransformSpecification(SchemaAV1, SchemaBV1,
-                               fn)
+                                     fn)
         @test isequal(TransformSpecification(SchemaAV1, SchemaBV1, fn),
                       TransformSpecification(SchemaAV1, SchemaBV1, fn))
     end
@@ -88,10 +91,10 @@ end
 
 @testset "`transform` vs `transform!`" begin
     ts = TransformSpecification(SchemaAV1, SchemaAV1,
-                           r -> begin
-                               push!(r.list, 122)
-                               return SchemaAV1(; foo="b")
-                           end)
+                                r -> begin
+                                    push!(r.list, 122)
+                                    return SchemaAV1(; foo="b")
+                                end)
     input_a = SchemaAV1(; foo="a")
 
     # Mutating
