@@ -209,25 +209,38 @@ does not conform to `input_specification(ntt)` or `ntt.transform_fn` fails, will
 return `NoThrowResult{Missing}` with the cause of failure noted in the `violations`.
 """
 function transform!(ntt::NoThrowTransform, input)
+    # Check that input meets specification
+    InSpec = input_specification(ntt)
     _input = try
-        spec = input_specification(ntt)
-        interpret_input(spec, input)
+        interpret_input(InSpec, input)
     catch e
         # rethrow(e)
         return NoThrowResult(;
-                             violations="Input doesn't conform to expected specification for $(input_specification(ntt)). Details: " *
+                             violations="Input doesn't conform to specification `$(InSpec)`. Details: " *
                                         string(e))
     end
-    try
-        Out = output_specification(ntt)
-        result = ntt.transform_fn(_input)::Out
-        return NoThrowResult(result)
+
+    # Do transformation
+    result = try
+        NoThrowResult(ntt.transform_fn(_input))
     catch e
         # rethrow(e)
         return NoThrowResult(;
                              violations="Unexpected transform violation for $(input_specification(ntt)). Details: " *
                                         string(e))
     end
+
+    # ...wrap it in a nothrow, so that any nested nothrows are correctly collapsed
+    # before output specification checking happens.
+    ntt_result = NoThrowResult(result)
+
+    # Check that output meets specification
+    OutSpec = output_specification(ntt)
+    if ntt_result isa Union{OutSpec,NoThrowResult{Missing}}
+        return ntt_result::Union{OutSpec,NoThrowResult{Missing}}
+    end
+    return NoThrowResult(;
+                         violations="Output doesn't conform to specification `$(OutSpec)`; is instead a `$(typeof(ntt_result))`")::NoThrowResult{Missing}
 end
 
 function Base.show(io::IO, p::NoThrowTransform)
@@ -277,6 +290,7 @@ end
 
 for pred in (:(==), :(isequal)),
     T in [AbstractTransformSpecification, NoThrowResult, NoThrowTransform]
+
     @eval function Base.$pred(x::$T, y::$T)
         return all(p -> $pred(getproperty(x, p), getproperty(y, p)), fieldnames($T))
     end
