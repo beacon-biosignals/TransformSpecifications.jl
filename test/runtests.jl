@@ -9,7 +9,7 @@ include("set_up_tests.jl")
         include("transform.jl")
     end
 
-    @testset "`NoThrowTransform`" begin
+    @testset "NoThrow" begin
         include("nothrow.jl")
     end
 end

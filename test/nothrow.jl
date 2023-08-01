@@ -72,7 +72,7 @@ end
     @test ismissing(NoThrowResult(; violations="Foo") == NoThrowResult(; violations="Foo"))
     @test isequal(NoThrowResult(; violations="Foo"), NoThrowResult(; violations="Foo"))
 
-    @testset "`NoThrowTransform{NoThrowTransform{T}}`" begin
+    @testset "Nested `NoThrowResult{T}`" begin
         record = NoThrowResult(SchemaAV1(; foo="whee"); warnings="avast")
         @test record isa NoThrowResult{SchemaAV1}
 
@@ -98,7 +98,7 @@ end
         @test nested_result.warnings == ["$i" for i in 0:10]
     end
 
-    @testset "`NoThrowTransform{NoThrowTransform{Missing}}`" begin
+    @testset "Nested `NoThrowResult{Missing}`" begin
         record = NoThrowResult(missing; violations="violation a", warnings="warnings a")
         @test record isa NoThrowResult{Missing}
         result_with_missing = NoThrowResult(record)
@@ -165,7 +165,7 @@ end
         result = transform!(ntt_unexpected_throw, input_record)
         @test !nothrow_succeeded(result)
         @test isequal(only(result.violations),
-                      "Unexpected transform violation for SchemaAV1. Details: Oh no, an unexpected exception---if only we'd checked for it and returned a NoThrowResult{Missing} instead!")
+                      "Unexpected violation: Oh no, an unexpected exception---if only we'd checked for it and returned a NoThrowResult{Missing} instead!")
     end
 
     @testset "Nonconforming ouptut fails" begin
