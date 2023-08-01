@@ -155,11 +155,14 @@ end
 
     @testset "Nested `NoThrowResult` outputs collapse" begin
         ntt = NoThrowTransform(SchemaAV1, SchemaBV1, _ -> SchemaBV1(; name="yay"))
-        ntt_nested = NoThrowTransform(SchemaAV1, NoThrowResult{SchemaBV1}, _ -> NoThrowResult(SchemaBV1(; name="yay"); warnings="woohoo"))
+        ntt_nested = NoThrowTransform(SchemaAV1, NoThrowResult{SchemaBV1},
+                                      _ -> NoThrowResult(SchemaBV1(; name="yay");
+                                                         warnings="woohoo"))
         @test input_specification(ntt) == input_specification(ntt_nested)
-        @test output_specification(ntt) == output_specification(ntt_nested) == NoThrowResult{SchemaBV1}
+        @test output_specification(ntt) == output_specification(ntt_nested) ==
+              NoThrowResult{SchemaBV1}
         @test output_specification(ntt.transform_spec) == SchemaBV1
-        @test output_specification(ntt_nested.transform_spec) ==  NoThrowResult{SchemaBV1}
+        @test output_specification(ntt_nested.transform_spec) == NoThrowResult{SchemaBV1}
 
         input_record = SchemaAV1(; foo="rabbit")
         result = transform!(ntt, input_record)
@@ -190,7 +193,7 @@ end
         result = transform!(ntt_unexpected_throw, input_record)
         @test !nothrow_succeeded(result)
         @test isequal(only(result.violations),
-        "Unexpected violation: ErrorException(\"Oh no, an unexpected exception---if only we'd checked for it and returned a NoThrowResult{Missing} instead!\")")
+                      "Unexpected violation: ErrorException(\"Oh no, an unexpected exception---if only we'd checked for it and returned a NoThrowResult{Missing} instead!\")")
         @test_throws ErrorException transform_unwrapped!(ntt_unexpected_throw, input_record)
     end
 
@@ -210,7 +213,8 @@ end
         @test !nothrow_succeeded(result)
         @test isequal(only(result.violations),
                       "Output doesn't conform to specification `NoThrowResult{SchemaBV1}`; is instead a `NoThrowResult{SchemaAV1}`")
-        @test_throws ErrorException transform_unwrapped!(ntt_nonconforming_out, input_record)
+        @test_throws ErrorException transform_unwrapped!(ntt_nonconforming_out,
+                                                         input_record)
     end
 
     @testset "Warnings forwarded" begin
