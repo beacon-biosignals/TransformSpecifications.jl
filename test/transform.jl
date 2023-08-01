@@ -39,8 +39,8 @@ end
     @testset "Nonconforming transform fails" begin
         input_record = SchemaAV1(; foo="rabbit")
         err_msg = "Oh no, an unexpected exception!"
-        ts_unexpected_throw = TransformSpecification(SchemaAV1, SchemaBV1,  _ -> throw(err_msg))
-        @test_throws err_msg transform!(ts_unexpected_throw, input_record)
+        ts_unexpected_throw = TransformSpecification(SchemaAV1, SchemaBV1,  _ -> throw(ErrorException(err_msg)))
+        @test_throws ErrorException(err_msg) transform!(ts_unexpected_throw, input_record)
     end
 
     @testset "Nonconforming ouptut fails" begin
