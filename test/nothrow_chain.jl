@@ -16,22 +16,18 @@ end
 
 @testset "`NoThrowTransformChain`" begin
     ntt = identity_no_throw_transform(SchemaAV1)
-    steps = [ChainStep("a", ntt, nothing), ChainStep("b", ntt, identity), ChainStep("c", ntt, identity), ]
+    steps = [ChainStep("a", ntt, nothing), ChainStep("b", ntt, identity),
+             ChainStep("c", ntt, identity)]
     chain = NoThrowTransformChain(steps)
     @test chain isa NoThrowTransformChain
+    @test length(keys(chain.step_input_constructors)) ==
+          length(keys(chain.step_transforms)) == length(keys(chain.io_mapping))
 
-
-    # Input constructor for first step is optional---but must be `nothing` if present
-    @test NoThrowTransformChain(OrderedDict(:a => ntt, :b => ntt),
-                                Dict(:b => identity)) isa NoThrowTransformChain
-    @test NoThrowTransformChain(OrderedDict(:a => ntt, :b => ntt),
-                                Dict(:a => nothing, :b => identity)) isa
-          NoThrowTransformChain
-    @test_throws "ArgumentError: First step's input constructor must be `nothing`" NoThrowTransformChain(OrderedDict(:a => ntt,
-                                                                                                                     :b => ntt),
-                                                                                                         Dict(:a => identity,
-                                                                                                              :b => identity)) isa
-                                                                                   NoThrowTransformChain
+    # Input constructor for first step must be `nothing`
+    @test NoThrowTransformChain([ChainStep("a", ntt, nothing)]) isa NoThrowTransformChain
+    @test_throws ArgumentError("Initial step's input constructor must be `nothing` (`identity`)") NoThrowTransformChain([ChainStep("a",
+                                                                                                                                   ntt,
+                                                                                                                                   identity)])
 
     # TODO: test chain
     # TODO: test append! functionality

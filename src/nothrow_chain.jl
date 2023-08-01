@@ -66,7 +66,7 @@ struct NoThrowTransformChain <: AbstractTransformSpecification
 
     function NoThrowTransformChain(init_step::ChainStep)
         if !isnothing(init_step.input_constructor)
-            throw(ArgumentError("Initial step's input constructor must be `nothing` (`$(init_step)`)"))
+            throw(ArgumentError("Initial step's input constructor must be `nothing` (`$(init_step.input_constructor)`)"))
         end
         transform_spec = init_step.transform_spec isa NoThrowTransform ?
                          init_step.transform_spec : NoThrowTransform(transform_spec)
@@ -77,17 +77,6 @@ struct NoThrowTransformChain <: AbstractTransformSpecification
     end
 end
 
-function _field_map(specification; recurse_into_legolas_schemas::Bool=false)
-    m = map(zip(fieldnames(specification), fieldtypes(specification))) do (name, type)
-        # if recurse_into_legolas_schemas && type <: Legolas.AbstractRecord
-        #     # TODO-future: do this recursively? For now, only one layer deep
-        #     return _field_map(; recurse_into_legolas_schemas=false)
-        # end
-        return name => type
-    end
-    return Dict(m)
-end
-
 function NoThrowTransformChain(steps::Vector{<:ChainStep})
     length(steps) == 0 &&
         throw(ArgumentError("At least one step required to construct a chain"))
@@ -96,6 +85,21 @@ function NoThrowTransformChain(steps::Vector{<:ChainStep})
         push!(chain, step)
     end
     return chain
+end
+
+function _field_map(specification::Type{<:NoThrowResult}; kwargs...)
+    return _field_map(result_type(specification); kwargs...)
+end
+
+function _field_map(specification; recurse_into_legolas_schemas::Bool=false)
+    m = map(zip(fieldnames(specification), fieldtypes(specification))) do (name, type)
+        if recurse_into_legolas_schemas && type <: Legolas.AbstractRecord
+            # TODO-future: do this recursively? For now, only one layer deep
+            return _field_map(; recurse_into_legolas_schemas=false)
+        end
+        return name => type
+    end
+    return Dict(m)
 end
 
 #TODO-Future: consider making a constructor that special-cases when taking in
@@ -123,6 +127,7 @@ function Base.push!(chain::NoThrowTransformChain, step::ChainStep)
     # Forge it!
     push!(chain.step_transforms, step.name => step.transform_spec)
     push!(chain.step_input_constructors, step.name => step.input_constructor)
+    push!(chain.io_mapping, step.name => _field_map(output_specification(step.transform_spec)))
     return chain
 end
 
