@@ -13,8 +13,23 @@ include("abstract.jl")
 export AbstractTransformSpecification, input_specification, output_specification,
        transform!, transform
 
-include("nothrow_transforms.jl")
+include("transform.jl")
+export TransformSpecification
+
+include("nothrow.jl")
 export NoThrowResult, NoThrowTransform, nothrow_succeeded, identity_no_throw_transform,
        is_identity_no_throw_transform
+
+#####
+##### Shared utilities
+#####
+
+for pred in (:(==), :(isequal)),
+    T in [AbstractTransformSpecification, TransformSpecification, NoThrowResult, NoThrowTransform]
+
+    @eval function Base.$pred(x::$T, y::$T)
+        return all(p -> $pred(getproperty(x, p), getproperty(y, p)), fieldnames($T))
+    end
+end
 
 end

@@ -195,25 +195,6 @@ function output_specification(ntt::NoThrowTransform)
     return NoThrowResult{ntt.output_specification}
 end
 
-#TODO-future: could upstream a version of `Base.convert(spec::Type{<:Legolas.AbstractRecord}, input)` and use convert in place of this new function
-"""
-    interpret_input(::Type{T}, input::T) where {T}
-    interpret_input(::Type{T}, input::T) where {T<:Legolas.AbstractRecord}
-    interpret_input(spec::Type{<:Legolas.AbstractRecord}, input)
-    interpret_input(spec, input)
-
-Return `input` interpreted as type `T`: is same as `identity` function if `input`
-is already of type `T`; otherwise, attempts to construct or `Base.convert`s the
-the output type from the input. Will throw if conversion fails or is otherwise
-undefined.
-
-See also: [`transform!`](@ref)
-"""
-interpret_input(::Type{T}, input::T) where {T} = input
-interpret_input(::Type{T}, input::T) where {T<:Legolas.AbstractRecord} = input
-interpret_input(spec::Type{<:Legolas.AbstractRecord}, input) = (spec)(input)
-interpret_input(spec, input) = convert(spec, input)
-
 """
     transform!(ntt::NoThrowTransform, input)
 
@@ -305,16 +286,3 @@ function is_identity_no_throw_transform(ntt::NoThrowTransform)
     end
     return is_identity
 end
-
-#####
-##### Shared utilities
-#####
-
-for pred in (:(==), :(isequal)),
-    T in [AbstractTransformSpecification, NoThrowResult, NoThrowTransform]
-
-    @eval function Base.$pred(x::$T, y::$T)
-        return all(p -> $pred(getproperty(x, p), getproperty(y, p)), fieldnames($T))
-    end
-end
-# TODO-help: do we need a hash function for these as well?
