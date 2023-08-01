@@ -96,9 +96,8 @@ function transform!(ts::TransformSpecification, input)
     InSpec = input_specification(ts)
     input = try
         interpret_input(InSpec, input)
-    catch e
-        @warn "Input doesn't conform to specification `$(InSpec)`"
-        rethrow(e)
+    catch
+        rethrow(ArgumentError("Input doesn't conform to specification `$(InSpec)`"))
     end
 
     # Do transformation
@@ -107,7 +106,7 @@ function transform!(ts::TransformSpecification, input)
     # Check that output meets specification
     OutSpec = output_specification(ts)
     if !(result isa OutSpec)
-        @warn "Output doesn't conform to specification `$(OutSpec)`; is instead a `$(typeof(result))`"
+        throw(ErrorException("Output doesn't conform to specification `$(OutSpec)`; is instead a `$(typeof(result))`"))
     end
     return result::OutSpec
 end
