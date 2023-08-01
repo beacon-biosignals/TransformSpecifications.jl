@@ -44,8 +44,7 @@ TransformSpecification{ExampleInSchemaV1,ExampleOutSchemaV1}: `apply_example`
 transform!(p, ExampleInSchemaV1(; in_name="greetings"))
 
 # output
-ExampleOutSchemaV1:
- :out_name  "greetings earthling"
+ExampleOutSchemaV1: (out_name = "greetings earthling",)
 ```
 """
 Base.@kwdef struct TransformSpecification{T<:Type,U<:Type} <: AbstractTransformSpecification
