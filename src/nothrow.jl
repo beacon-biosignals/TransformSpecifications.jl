@@ -125,23 +125,26 @@ nothrow_succeeded(::NoThrowResult) = true
 """
     NoThrowTransform{TransformSpecification{T<:Type,U<:Type}} <: AbstractTransformSpecification
 
-Basic component that wraps a [`TransformSpecification`](@ref) `ts`, returning
-a [`NoThrowResult`](@ref) of type `NoThrowResult{output_specification(ts)}` if
-`transform!(ts, input)` succeeds and `NoThrowResult{Missing}` if `transform!` throws
-an error.
+Wrapper around a basic [`TransformSpecification`](@ref) that returns a [`NoThrowResult`](@ref)
+of type `NoThrowResult{T}`, where `T` is the output specification of the inner transform.
+If calling `transform!` on a `NoThrowTransform` errors, due to either incorrect input/output
+types or an exception during the transform itself, the exception will be caught and
+returned as a `NoThrowResult{Missing}`, with the error(s) in the result's `violations` field.
+See [`NoThrowResult`](@ref) for details.
 
-Note that `NoThrowResult`s collapse down to a single `NoThrowResult` when nested,
+Note that results of a `NoThrowTransform` collapse down to a single `NoThrowResult` when nested,
 such that if the output_specification of the inner TransformSpecification is itself a
-`NoThrowResult{T}`, the output_specification of the `NoThrowTransform` will also be
+`NoThrowResult{T}`, the output_specification of the `NoThrowTransform` will have
 that same output specification `NoThrowResult{T}`, and *not* `NoThrowResult{NoThrowResult{T}}`.
 
 
 ## Fields
 
-- `transform_spec::TransformSpecification{T<:Type,U<:Type}`
+- `transform_spec::TransformSpecification{T,U}`
 
-## Example
+## Example 1: Successful transformation
 
+Set-up:
 ```jldoctest test2
 using Legolas: @schema, @version
 
@@ -157,13 +160,14 @@ end
 
 function apply_example(in_record)
     out_name = in_record.in_name * " earthling"
-    return NoThrowResult(ExampleOutSchemaV1(; out_name))
+    return ExampleOutSchemaV1(; out_name)
 end
 p = NoThrowTransform(ExampleInSchemaV1, ExampleOutSchemaV1, apply_example)
 
 # output
 NoThrowTransform{ExampleInSchemaV1,ExampleOutSchemaV1}: `apply_example`
 ```
+Application of transform:
 ```jldoctest test2
 transform!(p, ExampleInSchemaV1(; in_name="greetings"))
 
@@ -172,6 +176,10 @@ NoThrowResult{ExampleOutSchemaV1}: Transform succeeded
   ✅ result: ExampleOutSchemaV1:
  :out_name  "greetings earthling"
 ```
+
+## Example 2: Failing transformation
+
+Set-up:
 ```jldoctest test2
 force_failure_example(in_record) = NoThrowResult(; violations=["womp", "womp"])
 p = NoThrowTransform(ExampleInSchemaV1, ExampleOutSchemaV1, force_failure_example)
@@ -179,6 +187,7 @@ p = NoThrowTransform(ExampleInSchemaV1, ExampleOutSchemaV1, force_failure_exampl
 # output
 NoThrowTransform{ExampleInSchemaV1,ExampleOutSchemaV1}: `force_failure_example`
 ```
+Application of transform:
 ```jldoctest test2
 transform!(p, ExampleInSchemaV1(; in_name="greetings"))
 
@@ -252,7 +261,8 @@ function transform!(ntt::NoThrowTransform, input)
     if ntt_result isa Union{OutSpec,NoThrowResult{Missing}}
         return ntt_result::Union{OutSpec,NoThrowResult{Missing}}
     end
-    return NoThrowResult(; violations="Output doesn't conform to specification `$(OutSpec)`; is instead a `$(typeof(ntt_result))`")::NoThrowResult{Missing}
+    return NoThrowResult(;
+                         violations="Output doesn't conform to specification `$(OutSpec)`; is instead a `$(typeof(ntt_result))`")::NoThrowResult{Missing}
 end
 
 function Base.show(io::IO, p::NoThrowTransform)
