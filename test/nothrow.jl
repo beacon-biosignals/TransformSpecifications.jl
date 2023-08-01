@@ -197,7 +197,7 @@ end
         @test_throws ErrorException transform_unwrapped!(ntt_unexpected_throw, input_record)
     end
 
-    @testset "Nonconforming ouptut fails" begin
+    @testset "Nonconforming output fails" begin
         input_record = SchemaAV1(; foo="rabbit")
         ntt_expected_throw = NoThrowTransform(SchemaAV1, SchemaAV1,
                                               _ -> SchemaBV1(; name="rad"))
