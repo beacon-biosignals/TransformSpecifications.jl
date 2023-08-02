@@ -15,10 +15,13 @@ end
 end
 
 @testset "`NoThrowResult`" begin
-    @testset "`violations` or `result` required" begin
+    @testset "`violations` OR `result` required" begin
         @test_throws ArgumentError NoThrowResult()
         @test_throws ArgumentError NoThrowResult(; warnings="Foo")
         @test_throws ArgumentError NoThrowResult(; result=missing)
+        @test_throws MethodError NoThrowResult(; violations=[3, 2])
+        @test_throws ArgumentError NoThrowResult(; violations="Foo",
+                                                 result=SchemaAV1(; foo="huzzah"))
     end
 
     @testset "Success result" begin
@@ -50,7 +53,6 @@ end
         @test length(result_with_violations.violations) == 2
         @test !nothrow_succeeded(result_with_violations)
         @test typeof(result_with_violations) == NoThrowResult{Missing}
-        @test_throws ArgumentError NoThrowResult(; violations="Foo", result)
     end
 
     @testset "Single warning/violation helper" begin
