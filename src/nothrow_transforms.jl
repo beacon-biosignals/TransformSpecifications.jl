@@ -74,11 +74,12 @@ struct NoThrowResult{T}
             throw(ArgumentError("Invalid construction: if `violations` are non-empty, \
                                 `result` must be `missing`."))
         end
-        warnings isa Vector{String} || (warnings = [warnings])
-        violations isa Vector{String} || (violations = [violations])
-        return new{T}(result, violations, warnings)
+        return new{T}(result, _to_vec(violations), _to_vec(warnings))
     end
 end
+
+_to_vec(x::AbstractString) = [x]
+_to_vec(x) = x
 
 function NoThrowResult(; result=missing, violations=String[], warnings=String[])
     return NoThrowResult(result, violations, warnings)
@@ -200,7 +201,6 @@ function output_specification(ntt::NoThrowTransform)
     return NoThrowResult{ntt.output_specification}
 end
 
-#TODO-future: could upstream a version of `Base.convert(spec::Type{<:Legolas.AbstractRecord}, input)` and use convert in place of this new function
 """
     interpret_input(::Type{T}, input::T) where {T}
     interpret_input(::Type{T}, input::T) where {T<:Legolas.AbstractRecord}
@@ -215,6 +215,7 @@ undefined.
 See also: [`transform!`](@ref)
 """
 interpret_input(::Type{T}, input::T) where {T} = input
+# Required due to method ambiguity
 interpret_input(::Type{T}, input::T) where {T<:Legolas.AbstractRecord} = input
 interpret_input(spec::Type{<:Legolas.AbstractRecord}, input) = (spec)(input)
 interpret_input(spec, input) = convert(spec, input)

@@ -15,62 +15,71 @@ end
 end
 
 @testset "`NoThrowResult`" begin
-    # At least one of "violations" or "record" must be present
-    @test_throws ArgumentError NoThrowResult()
-    @test_throws ArgumentError NoThrowResult(; warnings="Foo")
-    @test_throws ArgumentError NoThrowResult(; result=missing)
+    @testset "At least one of `violations` or `result` must be present" begin
+        @test_throws ArgumentError NoThrowResult()
+        @test_throws ArgumentError NoThrowResult(; warnings="Foo")
+        @test_throws ArgumentError NoThrowResult(; result=missing)
+    end
 
-    # Construction of basic result does not include or require warnings/violations
-    record = SchemaAV1(; foo="huzzah")
-    result = NoThrowResult(record)
-    @test isequal(result, NoThrowResult(; result=record))
-    @test isempty(result.violations)
-    @test isempty(result.warnings)
-    @test nothrow_succeeded(result)
-    @test typeof(result) == NoThrowResult{SchemaAV1}
+    @testset "Construction of basic success resultant" begin
+        record = SchemaAV1(; foo="huzzah")
+        result = NoThrowResult(record)
+        @test isequal(result, NoThrowResult(; result=record))
+        @test isempty(result.violations)
+        @test isempty(result.warnings)
+        @test nothrow_succeeded(result)
+        @test typeof(result) == NoThrowResult{SchemaAV1}
+        @test_throws ArgumentError NoThrowResult(; violations="Foo", result)
+    end
 
-    # ...when warnings present, ntt can still be "successful"
-    result_with_warnings = NoThrowResult(record; warnings=["look out",
+    @testset "when warnings present, result can still be successful" begin
+        record = SchemaAV1(; foo="huzzah")
+        result = NoThrowResult(record)
+        result_with_warnings = NoThrowResult(record; warnings=["look out",
+                                                               "LOOK OUT!"])
+        @test result_with_warnings.result == result.result
+        @test length(result_with_warnings.warnings) == 2
+        @test nothrow_succeeded(result)
+        @test typeof(result_with_warnings) == NoThrowResult{SchemaAV1}
+    end
+
+    @testset "when violations present, result has not succeeded" begin
+        result_with_violations = NoThrowResult(;
+                                               violations=["look out",
                                                            "LOOK OUT!"])
-    @test result_with_warnings.result == result.result
-    @test length(result_with_warnings.warnings) == 2
-    @test nothrow_succeeded(result)
-    @test typeof(result_with_warnings) == NoThrowResult{SchemaAV1}
+        @test ismissing(result_with_violations.result)
+        @test length(result_with_violations.violations) == 2
+        @test !nothrow_succeeded(result_with_violations)
+        @test typeof(result_with_violations) == NoThrowResult{Missing}
+    end
 
-    # ...when violations present, ntt is deemed to not have succeeded
-    result_with_violations = NoThrowResult(;
-                                           violations=["look out",
-                                                       "LOOK OUT!"])
-    @test ismissing(result_with_violations.result)
-    @test length(result_with_violations.violations) == 2
-    @test !nothrow_succeeded(result_with_violations)
-    @test typeof(result_with_violations) == NoThrowResult{Missing}
+    @testset "single warning/violation converted to vector" begin
+        record = SchemaAV1(; foo="huzzah")
+        @test isequal(NoThrowResult(; warnings="Foo", result=record),
+                      NoThrowResult(; warnings=["Foo"], result=record))
+        @test isequal(NoThrowResult(; violations="Bar"),
+                      NoThrowResult(; violations=["Bar"]))
+        o = NoThrowResult(; warnings="Foo", violations="Bar")
+        @test o.warnings == ["Foo"]
+        @test o.violations == ["Bar"]
+    end
 
-    # Passing in a single warning or violation auto-generates a vector of warnings/violations
-    @test isequal(NoThrowResult(; warnings="Foo", result=record),
-                  NoThrowResult(; warnings=["Foo"], result=record))
-    @test isequal(NoThrowResult(; violations="Bar"),
-                  NoThrowResult(; violations=["Bar"]))
-    o = NoThrowResult(; warnings="Foo", violations="Bar")
-    @test o.warnings == ["Foo"]
-    @test o.violations == ["Bar"]
+    @testset "non-copying" begin
+        record = SchemaAV1(; foo="whee")
+        result = NoThrowResult(record)
+        @test length(record.list) == 1
+        push!(record.list, 12, 2, 1)
+        @test length(record.list) == 4
+        @test isequal(result.result, record)
+    end
 
-    @test NoThrowResult(; violations="Foo") isa NoThrowResult{Missing}
-    @test_throws ArgumentError NoThrowResult(; violations="Foo", result)
-
-    # Struct is non-copying:
-    record = SchemaAV1(; foo="whee")
-    result = NoThrowResult(record)
-    @test length(record.list) == 1
-    push!(record.list, 12, 2, 1)
-    @test length(record.list) == 4
-    @test isequal(result.result, record)
-
-    # Test Base extensions
-    @test NoThrowResult(record) == NoThrowResult(record)
-    @test isequal(NoThrowResult(record), NoThrowResult(record))
-    @test NoThrowResult(; violations="Foo") == NoThrowResult(; violations="Foo")
-    @test isequal(NoThrowResult(; violations="Foo"), NoThrowResult(; violations="Foo"))
+    @testset "base extensions" begin
+        record = SchemaAV1(; foo="whee")
+        @test NoThrowResult(record) == NoThrowResult(record)
+        @test isequal(NoThrowResult(record), NoThrowResult(record))
+        @test NoThrowResult(; violations="Foo") == NoThrowResult(; violations="Foo")
+        @test isequal(NoThrowResult(; violations="Foo"), NoThrowResult(; violations="Foo"))
+    end
 
     @testset "`NoThrowTransform{NoThrowTransform{T}}`" begin
         record = NoThrowResult(SchemaAV1(; foo="whee"); warnings="avast")
@@ -88,8 +97,9 @@ end
         @test NoThrowResult(; warnings=["Foo"], result) ==
               NoThrowResult(result; warnings=["Foo"]) ==
               NoThrowResult(; warnings="Foo", result)
+    end
 
-        # Nested results work
+    @testset "Nested `NoThrowTransform{T}`" begin
         nested_result = NoThrowResult(33; warnings="0")
         for i in 1:10
             nested_result = NoThrowResult(nested_result; warnings="$i")
@@ -122,8 +132,9 @@ end
                       NoThrowResult(missing; violations=["Foo"]))
         @test isequal(NoThrowResult(; violations=["Foo"]),
                       NoThrowResult(; violations="Foo"))
+    end
 
-        # Nested results work
+    @testset "Nested `NoThrowTransform{Missing}`" begin
         nested_result = NoThrowResult(; violations="0")
         for i in 1:10
             nested_result = NoThrowResult(nested_result; violations="$i")
@@ -196,7 +207,6 @@ end
     end
 
     @testset "Base extensions" begin
-        # Test Base extensions
         fn = _ -> NoThrowResult(SchemaBV1(; name="yay"))
         @test NoThrowTransform(SchemaAV1, SchemaBV1, fn) ==
               NoThrowTransform(SchemaAV1, SchemaBV1,
@@ -246,7 +256,7 @@ end
     @test isequal(input.list, [33, 122])
 
     # Non-mutating
-    input = SchemaAV1(; foo="rabbit")
+    input = SchemaAV1(; foo="rabbit")a
     @test isequal(input.list, [33])
     result = transform(ntt, input)
     @test isequal(input.list, [33])
