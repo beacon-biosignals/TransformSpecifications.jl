@@ -1,6 +1,6 @@
 """
-    NoThrowResult{T}(result::T, violations::Union{String,Vector{String}},
-                     warnings::Union{String,Vector{String}}) where {T}
+    NoThrowResult{T}(result::T, violations::Union{String,Vector{<:AbstractString}},
+                     warnings::Union{String,Vector{<:AbstractString}}) where {T}
     NoThrowResult(result; violations=String[], warnings=String[])
     NoThrowResult(; result=missing, violations=String[], warnings=String[])
 
@@ -18,9 +18,9 @@ See also: [`nothrow_succeeded`](@ref)
 
 ## Fields
 
-- `warnings::Vector{String}`: List of generated warnings that are not critical
+- `warnings::Vector{<:AbstractString}`: List of generated warnings that are not critical
     enough to be `violations`.
-- `violations::Vector{String}` List of reason(s) `result` was not able to be generated.
+- `violations::Vector{<:AbstractString}` List of reason(s) `result` was not able to be generated.
 - `result::`: Generated `result`; `missing` if any `violations` encountered.
 
 ## Example
@@ -61,11 +61,11 @@ NoThrowResult{Missing}: Transform failed
 """
 struct NoThrowResult{T}
     result::T
-    violations::Vector{String}
-    warnings::Vector{String}
+    violations::Vector{<:AbstractString}
+    warnings::Vector{<:AbstractString}
 
-    function NoThrowResult(result::T, violations::Union{String,Vector{String}},
-                           warnings::Union{String,Vector{String}}) where {T}
+    function NoThrowResult(result::T, violations::Union{String,Vector{<:AbstractString}},
+                           warnings::Union{String,Vector{<:AbstractString}}) where {T}
         if ismissing(result) && isempty(violations)
             throw(ArgumentError("Invalid construction: either `result` must be non-missing \
                                  OR `violations` must be non-empty."))
@@ -89,8 +89,8 @@ function NoThrowResult(result; violations=String[], warnings=String[])
     return NoThrowResult(result, violations, warnings)
 end
 
-function NoThrowResult(result::NoThrowResult, violations::Union{String,Vector{String}},
-                       warnings::Union{String,Vector{String}})
+function NoThrowResult(result::NoThrowResult, violations::Union{String,Vector{<:AbstractString}},
+                       warnings::Union{String,Vector{<:AbstractString}})
     warnings = vcat(result.warnings, warnings)
     violations = vcat(result.violations, violations)
     return NoThrowResult(result.result, violations, warnings)
