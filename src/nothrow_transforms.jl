@@ -262,8 +262,8 @@ function transform!(ntt::NoThrowTransform, input)
     if ntt_result isa Union{OutSpec,NoThrowResult{Missing}}
         return ntt_result::Union{OutSpec,NoThrowResult{Missing}}
     end
-    return NoThrowResult(;
-                         violations="Output doesn't conform to specification `$(OutSpec)`; is instead a `$(typeof(ntt_result))`")::NoThrowResult{Missing}
+    violations = "Output doesn't conform to specification `$(OutSpec)`; is instead a `$(typeof(ntt_result))`"
+    return NoThrowResult(; warnings=ntt_result.warnings, violations)::NoThrowResult{Missing}
 end
 
 function Base.show(io::IO, p::NoThrowTransform)
