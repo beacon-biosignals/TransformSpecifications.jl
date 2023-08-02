@@ -1,21 +1,26 @@
 """
-    NoThrowResult{T}(; warnings::Union{String,Vector{String}}=String[],
-                     violations::Union{String,Vector{String}}=String[],
-                     result::T)
-    NoThrowResult(result::T; kwargs...)
+    NoThrowResult{T}(result::T, violations::Union{String,Vector{<:AbstractString}},
+                     warnings::Union{String,Vector{<:AbstractString}}) where {T}
+    NoThrowResult(result; violations=String[], warnings=String[])
+    NoThrowResult(; result=missing, violations=String[], warnings=String[])
 
-Type that specifies the result of a transformation that indicates success of a
-transform through presence (or lack thereof) of `violations`.
+Type that specifies the result of a transformation, indicating successful
+application of a transform through presence (or lack thereof) of `violations `.
+Consists of either a non-`missing` `result` (success state) or non-empty `violations`
+and type `Missing` (failure state).
 
-Consists of either a non-`missing` `result` or a non-empty `violations`.
+Note that constructing a `NoThrowTransform` from an input `result` of type `NoThrowTransform`,
+e.g., `NoThrowTransform(::NoThrowTransform{T}, ...), collapses down to a single `NoThrowResult{T}`;
+any inner and outer warnings and violations fields are concatenated and returned in
+the resultant `NoThrowResult{T}`.
 
 See also: [`nothrow_succeeded`](@ref)
 
 ## Fields
 
-- `warnings::Vector{String}`: List of generated warnings that are not critical
+- `warnings::Vector{<:AbstractString}`: List of generated warnings that are not critical
     enough to be `violations`.
-- `violations::Vector{String}` List of reason(s) `result` was not able to be generated.
+- `violations::Vector{<:AbstractString}` List of reason(s) `result` was not able to be generated.
 - `result::`: Generated `result`; `missing` if any `violations` encountered.
 
 ## Example
@@ -56,11 +61,10 @@ NoThrowResult{Missing}: Transform failed
 """
 struct NoThrowResult{T}
     result::T
-    violations::Vector{String}
-    warnings::Vector{String}
+    violations::Vector{<:AbstractString}
+    warnings::Vector{<:AbstractString}
 
-    function NoThrowResult(result::T, violations::Union{String,Vector{String}},
-                           warnings::Union{String,Vector{String}}) where {T}
+    function NoThrowResult(result::T, violations, warnings) where {T}
         if ismissing(result) && isempty(violations)
             throw(ArgumentError("Invalid construction: either `result` must be non-missing \
                                  OR `violations` must be non-empty."))
@@ -69,11 +73,12 @@ struct NoThrowResult{T}
             throw(ArgumentError("Invalid construction: if `violations` are non-empty, \
                                 `result` must be `missing`."))
         end
-        warnings isa Vector{String} || (warnings = [warnings])
-        violations isa Vector{String} || (violations = [violations])
-        return new{T}(result, violations, warnings)
+        return new{T}(result, _to_vec(violations), _to_vec(warnings))
     end
 end
+
+_to_vec(x::AbstractString) = [x]
+_to_vec(x) = x
 
 function NoThrowResult(; result=missing, violations=String[], warnings=String[])
     return NoThrowResult(result, violations, warnings)
@@ -83,8 +88,9 @@ function NoThrowResult(result; violations=String[], warnings=String[])
     return NoThrowResult(result, violations, warnings)
 end
 
-function NoThrowResult(result::NoThrowResult, violations::Union{String,Vector{String}},
-                       warnings::Union{String,Vector{String}})
+function NoThrowResult(result::NoThrowResult,
+                       violations::Union{String,AbstractVector{<:AbstractString}},
+                       warnings::Union{String,AbstractVector{<:AbstractString}})
     warnings = vcat(result.warnings, warnings)
     violations = vcat(result.violations, violations)
     return NoThrowResult(result.result, violations, warnings)
@@ -204,9 +210,19 @@ end
 NoThrowTransform(args...) = NoThrowTransform(TransformSpecification(args...))
 NoThrowTransform(; kwargs...) = NoThrowTransform(TransformSpecification(; kwargs...))
 
-function input_specification(ntt::NoThrowTransform)
-    return input_specification(ntt.transform_spec)
+"""
+    NoThrowTransform(specification::Type)
+
+Create [`NoThrowTransform`](@ref) that meets the criteria of an identity NoThrowTransform,
+i.e., [`is_identity_no_throw_transform`](@ref).
+
+See also: [`identity_no_throw_result`](@ref)
+"""
+function NoThrowTransform(specification::Type)
+    return NoThrowTransform(specification, specification, identity_no_throw_result)
 end
+
+input_specification(ntt::NoThrowTransform) = input_specification(ntt.transform_spec)
 
 function output_specification(ntt::NoThrowTransform)
     spec = output_specification(ntt.transform_spec)
@@ -249,7 +265,7 @@ function transform!(ntt::NoThrowTransform, input)
     result = try
         NoThrowResult(ntt.transform_spec.transform_fn(_input))
     catch e
-        return NoThrowResult(; violations="Unexpected violation: " * string(e))
+        return NoThrowResult(; violations="Unexpected violation. Details: " * string(e))
     end
 
     # ...wrap it in a nothrow, so that any nested nothrows are correctly collapsed
@@ -291,18 +307,6 @@ Non-mutating implmementation of [`transform_unwrapped!`](@ref); applies
 transform_unwrapped(ntt::NoThrowTransform, input) = transform(ntt.transform_spec, input)
 
 """
-    identity_no_throw_transform(specification) -> NoThrowTransform{specification}
-
-Create [`NoThrowTransform`](@ref) where `input_specification==output_specification==specification` and `transform_fn`
-result is a `NoThrowResult{specification}`.
-
-See also: [`is_identity_no_throw_transform`](@ref)
-"""
-function identity_no_throw_transform(specification)
-    return NoThrowTransform(specification, specification, identity_no_throw_result)
-end
-
-"""
     identity_no_throw_result(result) -> NoThrowResult
 
 Return `NoThrowResult{T}` where `T=typeof(result)`
@@ -312,7 +316,9 @@ identity_no_throw_result(result) = NoThrowResult(result)
 """
     is_identity_no_throw_transform(ntt::NoThrowTransform) -> Bool
 
-Check if `ntt` meets the definition of an [`identity_no_throw_transform`](@ref).
+Check if `ntt` meets the definition of an identity NoThrowTransform, namely,
+`output_specification(ntt) == NoThrowTransform{input_specification(ntt)}` and
+transform function is [`identity_no_throw_result`](@ref).
 """
 function is_identity_no_throw_transform(ntt::NoThrowTransform)
     if input_specification(ntt) != output_specification(ntt.transform_spec)
@@ -325,3 +331,4 @@ function is_identity_no_throw_transform(ntt::NoThrowTransform)
     end
     return is_identity
 end
+

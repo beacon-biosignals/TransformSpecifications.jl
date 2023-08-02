@@ -72,6 +72,7 @@ undefined.
 See also: [`transform!`](@ref)
 """
 interpret_input(::Type{T}, input::T) where {T} = input
+# Required due to method ambiguity
 interpret_input(::Type{T}, input::T) where {T<:Legolas.AbstractRecord} = input
 interpret_input(spec::Type{<:Legolas.AbstractRecord}, input) = (spec)(input)
 interpret_input(spec, input) = convert(spec, input)
