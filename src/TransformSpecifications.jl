@@ -17,14 +17,14 @@ include("transform.jl")
 export TransformSpecification
 
 include("nothrow.jl")
-export NoThrowResult, NoThrowTransform, nothrow_succeeded, identity_no_throw_transform,
-       is_identity_no_throw_transform, transform_unwrapped!, transform_unwrapped
+export NoThrowResult, NoThrowTransform, nothrow_succeeded, is_identity_no_throw_transform,
+       transform_unwrapped!, transform_unwrapped
 
 include("nothrow_chain.jl")
 export NoThrowTransformChain, ChainStep
 
 #####
-##### Shared utilities
+##### Base extensions
 #####
 
 for pred in (:(==), :(isequal)),
@@ -34,6 +34,10 @@ for pred in (:(==), :(isequal)),
     @eval function Base.$pred(x::$T, y::$T)
         return all(p -> $pred(getproperty(x, p), getproperty(y, p)), fieldnames($T))
     end
+end
+
+function Base.:(==)(x::NoThrowResult{Missing}, y::NoThrowResult{Missing})
+    return x.warnings == y.warnings && x.violations == y.violations
 end
 
 end

@@ -1,7 +1,3 @@
-#####
-##### `TransformSpecification`
-#####
-
 """
     TransformSpecification{T<:Type,U<:Type} <: AbstractTransformSpecification
 
@@ -71,6 +67,7 @@ undefined.
 See also: [`transform!`](@ref)
 """
 interpret_input(::Type{T}, input::T) where {T} = input
+# Required due to method ambiguity
 interpret_input(::Type{T}, input::T) where {T<:Legolas.AbstractRecord} = input
 interpret_input(spec::Type{<:Legolas.AbstractRecord}, input) = (spec)(input)
 interpret_input(spec, input) = convert(spec, input)
@@ -94,7 +91,7 @@ function transform!(ts::TransformSpecification, input)
     InSpec = input_specification(ts)
     input = try
         interpret_input(InSpec, input)
-    catch
+    catch e
         rethrow(ArgumentError("Input doesn't conform to specification `$(InSpec)`"))
     end
 

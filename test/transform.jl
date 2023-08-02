@@ -49,8 +49,8 @@ end
         input_record = SchemaAV1(; foo="rabbit")
         ts_expected_throw = TransformSpecification(SchemaAV1, SchemaAV1,
                                                    _ -> SchemaBV1(; name="rad"))
-        @test_throws ErrorException("Output doesn't conform to specification `SchemaAV1`; is instead a `SchemaBV1`") transform!(ts_expected_throw,
-                                                                                                                                input_record)
+        err = ErrorException("Output doesn't conform to specification `SchemaAV1`; is instead a `SchemaBV1`")
+        @test_throws err transform!(ts_expected_throw, input_record)
     end
 
     @testset "Base extensions" begin
