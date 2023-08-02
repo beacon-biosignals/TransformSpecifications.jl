@@ -83,7 +83,7 @@ end
         @test isequal(NoThrowResult(; violations="Foo"), NoThrowResult(; violations="Foo"))
     end
 
-    @testset "`Nested `NoThrowResult{T}`" begin
+    @testset "Nested `NoThrowResult{T}`" begin
         record = NoThrowResult(SchemaAV1(; foo="whee"); warnings="avast")
         @test record isa NoThrowResult{SchemaAV1}
 
@@ -203,7 +203,7 @@ end
         result = transform!(ntt_unexpected_throw, input_record)
         @test !nothrow_succeeded(result)
         @test isequal(only(result.violations),
-        "Unexpected violation. Details: $err")
+                      "Unexpected violation. Details: $err")
         @test_throws ErrorException transform_unwrapped!(ntt_unexpected_throw, input_record)
     end
 
@@ -255,46 +255,46 @@ end
         @test isequal(NoThrowTransform(SchemaAV1, SchemaBV1, fn),
                       NoThrowTransform(SchemaAV1, SchemaBV1, fn))
     end
-end
 
-@testset "`transform` vs `transform!`" begin
-    ntt = NoThrowTransform(SchemaAV1, SchemaAV1,
-                           r -> begin
-                               push!(r.list, 122)
-                               return NoThrowResult(SchemaAV1(; foo="b"))
-                           end)
-    input_a = SchemaAV1(; foo="a")
+    @testset "`transform` vs `transform!`" begin
+        ntt = NoThrowTransform(SchemaAV1, SchemaAV1,
+                               r -> begin
+                                   push!(r.list, 122)
+                                   return NoThrowResult(SchemaAV1(; foo="b"))
+                               end)
+        input_a = SchemaAV1(; foo="a")
 
-    # Mutating
-    input = SchemaAV1(; foo="rabbit")
-    @test isequal(input.list, [33])
-    result = transform!(ntt, input)
-    @test isequal(input.list, [33, 122])
+        # Mutating
+        input = SchemaAV1(; foo="rabbit")
+        @test isequal(input.list, [33])
+        result = transform!(ntt, input)
+        @test isequal(input.list, [33, 122])
 
-    # Non-mutating
-    input = SchemaAV1(; foo="rabbit")
-    @test isequal(input.list, [33])
-    result = transform(ntt, input)
-    @test isequal(input.list, [33])
-end
+        # Non-mutating
+        input = SchemaAV1(; foo="rabbit")
+        @test isequal(input.list, [33])
+        result = transform(ntt, input)
+        @test isequal(input.list, [33])
+    end
 
-@testset "Identity `NoThrowTransform`" begin
-    test_transform_fn(_) = NoThrowResult(SchemaBV1(; name="yay"))
-    ntt_a = NoThrowTransform(SchemaAV1, SchemaBV1, test_transform_fn)
-    @test !is_identity_no_throw_transform(ntt_a)
-    @test_logs (:debug,
-                "Input and output schemas are not identical: NoThrowTransform{SchemaAV1,SchemaBV1}: `test_transform_fn`") min_level = Logging.Debug !is_identity_no_throw_transform(ntt_a)
+    @testset "Identity `NoThrowTransform`" begin
+        test_transform_fn(_) = NoThrowResult(SchemaBV1(; name="yay"))
+        ntt_a = NoThrowTransform(SchemaAV1, SchemaBV1, test_transform_fn)
+        @test !is_identity_no_throw_transform(ntt_a)
+        @test_logs (:debug,
+                    "Input and output schemas are not identical: NoThrowTransform{SchemaAV1,SchemaBV1}: `test_transform_fn`") min_level = Logging.Debug !is_identity_no_throw_transform(ntt_a)
 
-    ntt_b = NoThrowTransform(SchemaBV1, SchemaBV1, test_transform_fn)
-    @test !is_identity_no_throw_transform(ntt_b)
-    @test @test_logs (:debug,
-                      "`transform_fn` (`test_transform_fn`) is not `identity_no_throw_result`") min_level = Logging.Debug match_mode = :any !is_identity_no_throw_transform(ntt_b)
+        ntt_b = NoThrowTransform(SchemaBV1, SchemaBV1, test_transform_fn)
+        @test !is_identity_no_throw_transform(ntt_b)
+        @test @test_logs (:debug,
+                          "`transform_fn` (`test_transform_fn`) is not `identity_no_throw_result`") min_level = Logging.Debug match_mode = :any !is_identity_no_throw_transform(ntt_b)
 
-    ntt_c = NoThrowTransform(SchemaAV1)
-    @test is_identity_no_throw_transform(ntt_c)
+        ntt_c = NoThrowTransform(SchemaAV1)
+        @test is_identity_no_throw_transform(ntt_c)
 
-    ntt_d = NoThrowTransform(SchemaAV1, SchemaAV1,
-                             TransformSpecifications.identity_no_throw_result)
-    @test is_identity_no_throw_transform(ntt_d)
-    @test isequal(ntt_c, ntt_d)
+        ntt_d = NoThrowTransform(SchemaAV1, SchemaAV1,
+                                 TransformSpecifications.identity_no_throw_result)
+        @test is_identity_no_throw_transform(ntt_d)
+        @test isequal(ntt_c, ntt_d)
+    end
 end

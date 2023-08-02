@@ -1,6 +1,5 @@
 """
-    NoThrowResult{T}(result::T, violations::Union{String,Vector{<:AbstractString}},
-                     warnings::Union{String,Vector{<:AbstractString}}) where {T}
+    NoThrowResult(result::T, violations, warnings) where {T}
     NoThrowResult(result; violations=String[], warnings=String[])
     NoThrowResult(; result=missing, violations=String[], warnings=String[])
 
@@ -18,9 +17,9 @@ See also: [`nothrow_succeeded`](@ref)
 
 ## Fields
 
-- `warnings::Vector{<:AbstractString}`: List of generated warnings that are not critical
+- `warnings::AbstractVector{<:AbstractString}`: List of generated warnings that are not critical
     enough to be `violations`.
-- `violations::Vector{<:AbstractString}` List of reason(s) `result` was not able to be generated.
+- `violations::AbstractVector{<:AbstractString}` List of reason(s) `result` was not able to be generated.
 - `result::`: Generated `result`; `missing` if any `violations` encountered.
 
 ## Example
@@ -61,8 +60,8 @@ NoThrowResult{Missing}: Transform failed
 """
 struct NoThrowResult{T}
     result::T
-    violations::Vector{<:AbstractString}
-    warnings::Vector{<:AbstractString}
+    violations::AbstractVector{<:AbstractString}
+    warnings::AbstractVector{<:AbstractString}
 
     function NoThrowResult(result::T, violations, warnings) where {T}
         if ismissing(result) && isempty(violations)
@@ -256,16 +255,15 @@ function transform!(ntt::NoThrowTransform, input)
     _input = try
         interpret_input(InSpec, input)
     catch e
-        return NoThrowResult(;
-                             violations="Input doesn't conform to specification `$(InSpec)`. Details: " *
-                                        string(e))
+        violations = "Input doesn't conform to specification `$(InSpec)`. Details: $e"
+        return NoThrowResult(; violations)
     end
 
     # Do transformation
     result = try
-        NoThrowResult(ntt.transform_spec.transform_fn(_input))
+        NoThrowResult(ntt.transform_spec.transform_fn(_input)) #TODO-check this
     catch e
-        return NoThrowResult(; violations="Unexpected violation. Details: " * string(e))
+        return NoThrowResult(; violations="Unexpected violation. Details: $e")
     end
 
     # ...wrap it in a nothrow, so that any nested nothrows are correctly collapsed
@@ -277,8 +275,8 @@ function transform!(ntt::NoThrowTransform, input)
     if ntt_result isa Union{OutSpec,NoThrowResult{Missing}}
         return ntt_result::Union{OutSpec,NoThrowResult{Missing}}
     end
-    return NoThrowResult(;
-                         violations="Output doesn't conform to specification `$(OutSpec)`; is instead a `$(typeof(ntt_result))`")::NoThrowResult{Missing}
+    violations = "Output doesn't conform to specification `$(OutSpec)`; is instead a `$(typeof(ntt_result))`"
+    return NoThrowResult(; warnings=ntt_result.warnings, violations)::NoThrowResult{Missing}
 end
 
 function Base.show(io::IO, p::NoThrowTransform)
@@ -331,4 +329,3 @@ function is_identity_no_throw_transform(ntt::NoThrowTransform)
     end
     return is_identity
 end
-

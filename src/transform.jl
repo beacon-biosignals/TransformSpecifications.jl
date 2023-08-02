@@ -57,7 +57,6 @@ input_specification(ts::TransformSpecification) = ts.input_specification
 
 output_specification(ts::TransformSpecification) = ts.output_specification
 
-#TODO-future: could upstream a version of `Base.convert(spec::Type{<:Legolas.AbstractRecord}, input)` and use convert in place of this new function
 """
     interpret_input(::Type{T}, input::T) where {T}
     interpret_input(::Type{T}, input::T) where {T<:Legolas.AbstractRecord}
