@@ -29,7 +29,7 @@ export NoThrowTransformChain, ChainStep
 
 for pred in (:(==), :(isequal)),
     T in [AbstractTransformSpecification, TransformSpecification, NoThrowResult,
-          NoThrowTransform, NoThrowTransformChain]
+          NoThrowTransform, NoThrowTransformChain, ChainStep]
 
     @eval function Base.$pred(x::$T, y::$T)
         return all(p -> $pred(getproperty(x, p), getproperty(y, p)), fieldnames($T))

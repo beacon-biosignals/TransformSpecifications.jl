@@ -102,6 +102,17 @@ function _field_map(specification; recurse_into_legolas_schemas::Bool=false)
     return Dict(m)
 end
 
+Base.length(chain::NoThrowTransformChain) = length(chain.step_transforms)
+
+function getstep(chain::NoThrowTransformChain, name::String)
+    return ChainStep(name, chain.step_transforms[name], chain.step_input_constructors[name])
+end
+
+function getstep(chain::NoThrowTransformChain, step_index::Int)
+    name = keys(chain.step_transforms)[step_index]
+    return ChainStep(name, chain.step_transforms[name], chain.step_input_constructors[name])
+end
+
 #TODO-Future: consider making a constructor that special-cases when taking in
 # a specification that has a single field (e.g., a Samples object or something)
 # instead of doing this version that is geared at named tuple creation
@@ -127,7 +138,8 @@ function Base.push!(chain::NoThrowTransformChain, step::ChainStep)
     # Forge it!
     push!(chain.step_transforms, step.name => step.transform_spec)
     push!(chain.step_input_constructors, step.name => step.input_constructor)
-    push!(chain.io_mapping, step.name => _field_map(output_specification(step.transform_spec)))
+    push!(chain.io_mapping,
+          step.name => _field_map(output_specification(step.transform_spec)))
     return chain
 end
 

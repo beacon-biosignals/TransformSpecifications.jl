@@ -16,12 +16,14 @@ end
 
 @testset "`NoThrowTransformChain`" begin
     ntt = identity_no_throw_transform(SchemaAV1)
-    steps = [ChainStep("a", ntt, nothing), ChainStep("b", ntt, identity),
+    steps = [ChainStep("a", ntt, nothing),
+             ChainStep("b", ntt, identity),
              ChainStep("c", ntt, identity)]
     chain = NoThrowTransformChain(steps)
     @test chain isa NoThrowTransformChain
-    @test length(keys(chain.step_input_constructors)) ==
-          length(keys(chain.step_transforms)) == length(keys(chain.io_mapping))
+    @test issetequal(keys(chain.step_input_constructors), keys(chain.step_transforms))
+    @test issetequal(keys(chain.io_mapping), keys(chain.step_transforms))
+    @test length(steps) == length(chain) == 3
 
     # Input constructor for first step must be `nothing`
     @test NoThrowTransformChain([ChainStep("a", ntt, nothing)]) isa NoThrowTransformChain
