@@ -88,7 +88,8 @@ function NoThrowResult(result; violations=String[], warnings=String[])
     return NoThrowResult(result, violations, warnings)
 end
 
-function NoThrowResult(result::NoThrowResult, violations::Union{String,AbstractVector{<:AbstractString}},
+function NoThrowResult(result::NoThrowResult,
+                       violations::Union{String,AbstractVector{<:AbstractString}},
                        warnings::Union{String,AbstractVector{<:AbstractString}})
     warnings = vcat(result.warnings, warnings)
     violations = vcat(result.violations, violations)
