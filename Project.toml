@@ -3,13 +3,20 @@ uuid = "b92eaff8-8912-4b32-ad24-14d7c692d780"
 authors = ["Beacon Biosignals, Inc"]
 version = "0.0.1"
 
+[deps]
+Legolas = "741b9549-f6ed-4911-9fbf-4a1c0c97f0cd"
+OrderedCollections = "bac558e1-5e72-5ebc-8fee-abe8a469f55d"
+
 [compat]
 Aqua = "0.6"
+Legolas = "0.5.12"
+OrderedCollections = "1.6"
 julia = "1.7.2"
 
 [extras]
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
+Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Aqua", "Test"]
+test = ["Aqua", "Logging", "Test"]
