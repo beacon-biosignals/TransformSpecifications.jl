@@ -1,13 +1,18 @@
 """
-    NoThrowResult{T}(; warnings::Union{String,Vector{String}}=String[],
-                     violations::Union{String,Vector{String}}=String[],
-                     result::T)
-    NoThrowResult(result::T; kwargs...)
+    NoThrowResult{T}(result::T, violations::Union{String,Vector{String}},
+                     warnings::Union{String,Vector{String}}) where {T}
+    NoThrowResult(result; violations=String[], warnings=String[])
+    NoThrowResult(; result=missing, violations=String[], warnings=String[])
 
-Type that specifies the result of a transformation that indicates success of a
-transform through presence (or lack thereof) of `violations`.
+Type that specifies the result of a transformation, indicating successful
+application of a transform through presence (or lack thereof) of `violations `.
+Consists of either a non-`missing` `result` (success state) or non-empty `violations`
+and type `Missing` (failure state).
 
-Consists of either a non-`missing` `result` or a non-empty `violations`.
+Note that constructing a `NoThrowTransform` from an input `result` of type `NoThrowTransform`,
+e.g., `NoThrowTransform(::NoThrowTransform{T}, ...), collapses down to a single `NoThrowResult{T}`;
+any inner and outer warnings and violations fields are concatenated and returned in
+the resultant `NoThrowResult{T}`.
 
 See also: [`nothrow_succeeded`](@ref)
 
@@ -236,20 +241,16 @@ function transform!(ntt::NoThrowTransform, input)
     _input = try
         interpret_input(InSpec, input)
     catch e
-        # rethrow(e)
-        return NoThrowResult(;
-                             violations="Input doesn't conform to specification `$(InSpec)`. Details: " *
-                                        string(e))
+        violations = "Input doesn't conform to specification `$(InSpec)`. Details: $e"
+        return NoThrowResult(; violations)
     end
 
     # Do transformation
     result = try
         NoThrowResult(ntt.transform_fn(_input))
     catch e
-        # rethrow(e)
-        return NoThrowResult(;
-                             violations="Unexpected transform violation for $(input_specification(ntt)). Details: " *
-                                        string(e))
+        violations = "Unexpected transform violation for $(input_specification(ntt)). Details: $e"
+        return NoThrowResult(; violations)
     end
 
     # ...wrap it in a nothrow, so that any nested nothrows are correctly collapsed
@@ -317,4 +318,3 @@ for pred in (:(==), :(isequal)),
         return all(p -> $pred(getproperty(x, p), getproperty(y, p)), fieldnames($T))
     end
 end
-# TODO-help: do we need a hash function for these as well?
