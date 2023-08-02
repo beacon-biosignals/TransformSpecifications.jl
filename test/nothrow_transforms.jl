@@ -69,7 +69,7 @@ end
     # Test Base extensions
     @test NoThrowResult(record) == NoThrowResult(record)
     @test isequal(NoThrowResult(record), NoThrowResult(record))
-    @test ismissing(NoThrowResult(; violations="Foo") == NoThrowResult(; violations="Foo"))
+    @test NoThrowResult(; violations="Foo") == NoThrowResult(; violations="Foo")
     @test isequal(NoThrowResult(; violations="Foo"), NoThrowResult(; violations="Foo"))
 
     @testset "`NoThrowTransform{NoThrowTransform{T}}`" begin

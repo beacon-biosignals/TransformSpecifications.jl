@@ -318,3 +318,7 @@ for pred in (:(==), :(isequal)),
         return all(p -> $pred(getproperty(x, p), getproperty(y, p)), fieldnames($T))
     end
 end
+
+function Base.:(==)(x::NoThrowResult{Missing}, y::NoThrowResult{Missing})
+    return x.warnings == y.warnings && x.violations == y.violations
+end
