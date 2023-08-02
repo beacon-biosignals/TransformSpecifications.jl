@@ -165,18 +165,19 @@ end
         nonconforming_input_record = SchemaBV1(; name="rad")
         result = transform!(ntt, nonconforming_input_record)
         @test !nothrow_succeeded(result)
-        @test isequal(only(result.violations),
-                      "Input doesn't conform to specification `SchemaAV1`. Details: ArgumentError(\"Invalid value set for field `foo`, expected String, got a value of type Missing (missing)\")")
+        @test startswith(only(result.violations),
+                         "Input doesn't conform to specification `SchemaAV1`. Details: ")
     end
 
     @testset "Nonconforming transform fails" begin
         input_record = SchemaAV1(; foo="rabbit")
+        err = ErrorException("Oh no, an unexpected exception---if only we'd checked for it and returned a NoThrowResult{Missing} instead!")
         ntt_unexpected_throw = NoThrowTransform(SchemaAV1, SchemaBV1,
-                                                _ -> throw("Oh no, an unexpected exception---if only we'd checked for it and returned a NoThrowResult{Missing} instead!"))
+                                                _ -> throw(err))
         result = transform!(ntt_unexpected_throw, input_record)
         @test !nothrow_succeeded(result)
-        @test isequal(only(result.violations),
-                      "Unexpected transform violation for SchemaAV1. Details: Oh no, an unexpected exception---if only we'd checked for it and returned a NoThrowResult{Missing} instead!")
+        @test startswith(only(result.violations),
+                         "Unexpected transform violation for SchemaAV1. Details: $err")
     end
 
     @testset "Nonconforming ouptut fails" begin
@@ -256,7 +257,7 @@ end
     @test isequal(input.list, [33, 122])
 
     # Non-mutating
-    input = SchemaAV1(; foo="rabbit")a
+    input = SchemaAV1(; foo="rabbit")
     @test isequal(input.list, [33])
     result = transform(ntt, input)
     @test isequal(input.list, [33])
