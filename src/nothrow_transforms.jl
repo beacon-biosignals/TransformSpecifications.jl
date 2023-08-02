@@ -194,6 +194,18 @@ Base.@kwdef struct NoThrowTransform{T<:Type,U<:Type} <: AbstractTransformSpecifi
     transform_fn::Any
 end
 
+"""
+    NoThrowTransform(specification::T) -> NoThrowTransform{T,T}
+
+Create [`NoThrowTransform`](@ref) that meets the criteria of an identity NoThrowTransform,
+i.e., [`is_identity_no_throw_transform`](@ref).
+
+See also: [`identity_no_throw_result`](@ref)
+"""
+function NoThrowTransform(specification::Type)
+    return NoThrowTransform(specification, specification, identity_no_throw_result)
+end
+
 input_specification(ntt::NoThrowTransform) = ntt.input_specification
 
 function output_specification(ntt::NoThrowTransform)
@@ -272,18 +284,6 @@ function Base.show(io::IO, p::NoThrowTransform)
 end
 
 """
-    identity_no_throw_transform(specification) -> NoThrowTransform{specification}
-
-Create [`NoThrowTransform`](@ref) where `input_specification==output_specification==specification` and `transform_fn`
-result is a `NoThrowResult{specification}`.
-
-See also: [`is_identity_no_throw_transform`](@ref)
-"""
-function identity_no_throw_transform(specification)
-    return NoThrowTransform(specification, specification, identity_no_throw_result)
-end
-
-"""
     identity_no_throw_result(result) -> NoThrowResult
 
 Return `NoThrowResult{T}` where `T=typeof(result)`
@@ -293,7 +293,9 @@ identity_no_throw_result(result) = NoThrowResult(result)
 """
     is_identity_no_throw_transform(ntt::NoThrowTransform) -> Bool
 
-Check if `ntt` meets the definition of an [`identity_no_throw_transform`](@ref).
+Check if `ntt` meets the definition of an identity NoThrowTransform, namely,
+`output_specification(ntt) == NoThrowTransform{input_specification(ntt)}` and
+transform function is [`identity_no_throw_result`](@ref).
 """
 function is_identity_no_throw_transform(ntt::NoThrowTransform)
     if ntt.input_specification != ntt.output_specification
