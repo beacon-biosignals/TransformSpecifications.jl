@@ -256,7 +256,7 @@ See also: [`interpret_input`](@ref)
 function transform!(ntt::NoThrowTransform, input)
     # Check that input meets specification
     InSpec = input_specification(ntt)
-    _input = try
+    input = try
         interpret_input(InSpec, input)
     catch e
         violations = "Input doesn't conform to specification `$(InSpec)`. Details: $e"
@@ -265,7 +265,7 @@ function transform!(ntt::NoThrowTransform, input)
 
     # Do transformation
     result = try
-        NoThrowResult(ntt.transform_spec.transform_fn(_input)) #TODO-check this
+        NoThrowResult(ntt.transform_spec.transform_fn(input))
     catch e
         return NoThrowResult(; violations="Unexpected violation. Details: $e")
     end
