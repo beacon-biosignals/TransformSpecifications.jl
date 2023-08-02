@@ -1,7 +1,3 @@
-#####
-##### `TransformSpecification`
-#####
-
 """
     TransformSpecification{T<:Type,U<:Type} <: AbstractTransformSpecification
 
@@ -95,7 +91,7 @@ function transform!(ts::TransformSpecification, input)
     InSpec = input_specification(ts)
     input = try
         interpret_input(InSpec, input)
-    catch
+    catch e
         rethrow(ArgumentError("Input doesn't conform to specification `$(InSpec)`"))
     end
 

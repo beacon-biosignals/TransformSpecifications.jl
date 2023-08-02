@@ -1,3 +1,7 @@
+#####
+##### `NoThrowResult`
+#####
+
 """
     NoThrowResult(result::T, violations, warnings) where {T}
     NoThrowResult(result; violations=String[], warnings=String[])
