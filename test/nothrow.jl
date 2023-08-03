@@ -160,6 +160,10 @@ end
 
         result_unwrapped = transform_unwrapped!(ntt, conforming_input_record)
         @test isequal(result.result, result_unwrapped)
+
+        result_unwrapped2 = transform_unwrapped(ntt, conforming_input_record)
+        @test isequal(result.result, result_unwrapped)
+        @test isequal(result_unwrapped, result_unwrapped2)
     end
 
     @testset "Nested `NoThrowResult` outputs collapse" begin
