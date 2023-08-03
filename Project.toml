@@ -1,7 +1,7 @@
 name = "TransformSpecifications"
 uuid = "b92eaff8-8912-4b32-ad24-14d7c692d780"
 authors = ["Beacon Biosignals, Inc"]
-version = "0.0.1"
+version = "0.0.2"
 
 [deps]
 Legolas = "741b9549-f6ed-4911-9fbf-4a1c0c97f0cd"
