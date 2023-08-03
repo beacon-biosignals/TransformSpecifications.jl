@@ -212,6 +212,7 @@ struct NoThrowTransform{T,U} <: AbstractTransformSpecification
     transform_spec::TransformSpecification{T,U}
 end
 
+NoThrowTransform(t::NoThrowTransform) = t
 NoThrowTransform(args...) = NoThrowTransform(TransformSpecification(args...))
 NoThrowTransform(; kwargs...) = NoThrowTransform(TransformSpecification(; kwargs...))
 
