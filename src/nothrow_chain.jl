@@ -148,17 +148,18 @@ end
 #TODO-Future: consider making a constructor that special-cases when taking in
 # a specification that has a single field (e.g., a Samples object or something)
 # instead of doing this version that is geared at named tuple creation
-function _validate_input_assembler(chain::NoThrowTransformChain,
-                                   step_constructor::TransformSpecification)
-    # Do all the fields required by the constructor exist in the preceding steps' output?
-    mock_input = transform(step_constructor, chain._step_output_fields) # Will throw if any field doesn't exist
+"""
+    _validate_input_assembler(chain::NoThrowTransformChain, input_assembler::TransformSpecification)
+    _validate_input_assembler(chain::NoThrowTransformChain, ::Nothing)
 
-    # Does the constructor construct something that will probably work for the input schema?
-    # No way to _really_ know without constructing it....but if the defined input is
-    # a Legolas schema, then we could probably guess if we were going to fail horribly.
-    # Going to save that for the future: assuming it will be caught at unit-test time
-    # for now.
-    # TODO-future: maybe take a stab at this, maybe don't!
+Confirm that an input_assembler, when called on all upstream outputs, has all the
+output fields it needs to construct its input.
+"""
+_validate_input_assembler(chain::NoThrowTransformChain, ::Nothing) = nothing
+
+function _validate_input_assembler(chain::NoThrowTransformChain,
+                                   input_assembler::TransformSpecification)
+    transform(input_assembler, chain._step_output_fields) # Will throw if any field doesn't exist
     return nothing
 end
 
@@ -169,8 +170,8 @@ function Base.push!(chain::NoThrowTransformChain, step::ChainStep)
     _validate_input_assembler(chain, step.input_assembler)
 
     # Forge it!
-    push!(chain.step_transforms, step.name => step.transform_spec)
-    push!(chain.step_input_assemblers, step.name => step.input_assembler)
+    push!(chain.step_transforms, step.name => NoThrowTransform(step.transform_spec))
+    push!(chain.step_input_assemblers, step.name => step.input_assembler) #TODO: make NoThrowTransform ?
     push!(chain._step_output_fields,
           step.name => construct_field_map(output_specification(step.transform_spec)))
     return chain

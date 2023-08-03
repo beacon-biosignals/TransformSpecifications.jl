@@ -60,6 +60,18 @@ end
         chain_output2 = transform!(chain, conforming_input_record)
         @test isequal(chain_output, chain_output2)
     end
+end
+
+@testset "Cons" begin
+    NoThrowTransformChain([ChainStep("init", nothing,
+                                     TransformSpecification(SchemaFooV1, SchemaFooV1,
+                                                            identity))])
+end
+
+@testset "Construction errors" begin
+    using TransformSpecifications: input_assembler
+
+    @test_throws ArgumentError("At least one step required to construct a chain") NoThrowTransformChain(ChainStep[])
 
     @testset "First step constructor must be `nothing`" begin
         ntt = NoThrowTransform(SchemaBarV1)
@@ -68,5 +80,28 @@ end
         err = ArgumentError("Initial step's input constructor must be `nothing` (TransformSpecification{Dict{String, Any},NamedTuple}: `identity`)")
         @test_throws err NoThrowTransformChain([ChainStep("a", input_assembler(identity),
                                                           ntt)])
+    end
+
+    @testset "Invalid step combinations" begin
+        ts = TransformSpecification(SchemaFooV1, SchemaFooV1, identity)
+        err = ArgumentError("Key `foo` already exists in chain!")
+        @test_throws err NoThrowTransformChain([ChainStep("foo", nothing, ts),
+                                                ChainStep("foo", nothing, ts)])
+
+        ch = [ChainStep("step1", nothing, ts),
+              ChainStep("step2", input_assembler(d -> (; foo=d["x"])), ts)]
+        @test_throws KeyError("x") NoThrowTransformChain(ch)
+
+        ch = [ChainStep("step1", nothing, ts),
+              ChainStep("step2", input_assembler(d -> (; foo=d["step1"][:x])), ts)]
+        @test_throws KeyError(:x) NoThrowTransformChain(ch)
+
+        ch = [ChainStep("step1", nothing, ts),
+              ChainStep("step2", input_assembler(d -> (; foo=d["step1"][:foo])), ts),
+              ChainStep("step3", input_assembler(d -> (; foo=d["step1"][:foo])), ts)]
+        err = ArgumentError("Input assembler for step `step3` cannot depend on `[step1][foo]`; output already used by step `step2`")
+        @test_broken (@test_throws err NoThrowTransformChain(ch))
+
+
     end
 end
