@@ -1,6 +1,9 @@
+#####
+##### `NoThrowResult`
+#####
+
 """
-    NoThrowResult{T}(result::T, violations::Union{String,Vector{<:AbstractString}},
-                     warnings::Union{String,Vector{<:AbstractString}}) where {T}
+    NoThrowResult(result::T, violations, warnings) where {T}
     NoThrowResult(result; violations=String[], warnings=String[])
     NoThrowResult(; result=missing, violations=String[], warnings=String[])
 
@@ -18,9 +21,9 @@ See also: [`nothrow_succeeded`](@ref)
 
 ## Fields
 
-- `warnings::Vector{<:AbstractString}`: List of generated warnings that are not critical
+- `warnings::AbstractVector{<:AbstractString}`: List of generated warnings that are not critical
     enough to be `violations`.
-- `violations::Vector{<:AbstractString}` List of reason(s) `result` was not able to be generated.
+- `violations::AbstractVector{<:AbstractString}` List of reason(s) `result` was not able to be generated.
 - `result::`: Generated `result`; `missing` if any `violations` encountered.
 
 ## Example
@@ -61,8 +64,8 @@ NoThrowResult{Missing}: Transform failed
 """
 struct NoThrowResult{T}
     result::T
-    violations::Vector{<:AbstractString}
-    warnings::Vector{<:AbstractString}
+    violations::AbstractVector{<:AbstractString}
+    warnings::AbstractVector{<:AbstractString}
 
     function NoThrowResult(result::T, violations, warnings) where {T}
         if ismissing(result) && isempty(violations)
@@ -129,20 +132,28 @@ nothrow_succeeded(::NoThrowResult) = true
 #####
 
 """
-    NoThrowTransform{T<:Type,U<:Type} <: AbstractTransformSpecification
+    NoThrowTransform{TransformSpecification{T<:Type,U<:Type}} <: AbstractTransformSpecification
 
-Basic component that transforms input of type `T` to output of type `U`, returning
-a [`NoThrowResult`](@ref) of type `NoThrowResult{U}` if the transform succeeds and
-`NoThrowResult{Missing}` if an expected exception is encountered.
+Wrapper around a basic [`TransformSpecification`](@ref) that returns a [`NoThrowResult`](@ref)
+of type `NoThrowResult{T}`, where `T` is the output specification of the inner transform.
+If calling `transform!` on a `NoThrowTransform` errors, due to either incorrect input/output
+types or an exception during the transform itself, the exception will be caught and
+returned as a `NoThrowResult{Missing}`, with the error(s) in the result's `violations` field.
+See [`NoThrowResult`](@ref) for details.
+
+Note that results of a `NoThrowTransform` collapse down to a single `NoThrowResult` when nested,
+such that if the output_specification of the inner TransformSpecification is itself a
+`NoThrowResult{T}`, the output_specification of the `NoThrowTransform` will have
+that same output specification `NoThrowResult{T}`, and *not* `NoThrowResult{NoThrowResult{T}}`.
+
 
 ## Fields
 
-- `input_specification::T`
-- `output_specification::U`
-- `transform_fn::Function` Function with signature `transform_fn(::input_specification) -> NoThrowResult{output_specification}`
+- `transform_spec::TransformSpecification{T,U}`
 
-## Example
+## Example 1: Successful transformation
 
+Set-up:
 ```jldoctest test2
 using Legolas: @schema, @version
 
@@ -158,13 +169,14 @@ end
 
 function apply_example(in_record)
     out_name = in_record.in_name * " earthling"
-    return NoThrowResult(ExampleOutSchemaV1(; out_name))
+    return ExampleOutSchemaV1(; out_name)
 end
 p = NoThrowTransform(ExampleInSchemaV1, ExampleOutSchemaV1, apply_example)
 
 # output
 NoThrowTransform{ExampleInSchemaV1,ExampleOutSchemaV1}: `apply_example`
 ```
+Application of transform:
 ```jldoctest test2
 transform!(p, ExampleInSchemaV1(; in_name="greetings"))
 
@@ -173,6 +185,10 @@ NoThrowResult{ExampleOutSchemaV1}: Transform succeeded
   ✅ result: ExampleOutSchemaV1:
  :out_name  "greetings earthling"
 ```
+
+## Example 2: Failing transformation
+
+Set-up:
 ```jldoctest test2
 force_failure_example(in_record) = NoThrowResult(; violations=["womp", "womp"])
 p = NoThrowTransform(ExampleInSchemaV1, ExampleOutSchemaV1, force_failure_example)
@@ -180,6 +196,7 @@ p = NoThrowTransform(ExampleInSchemaV1, ExampleOutSchemaV1, force_failure_exampl
 # output
 NoThrowTransform{ExampleInSchemaV1,ExampleOutSchemaV1}: `force_failure_example`
 ```
+Application of transform:
 ```jldoctest test2
 transform!(p, ExampleInSchemaV1(; in_name="greetings"))
 
@@ -189,14 +206,15 @@ NoThrowResult{Missing}: Transform failed
   ❌ womp
 ```
 """
-Base.@kwdef struct NoThrowTransform{T<:Type,U<:Type} <: AbstractTransformSpecification
-    input_specification::T
-    output_specification::U
-    transform_fn::Any
+struct NoThrowTransform{T,U} <: AbstractTransformSpecification
+    transform_spec::TransformSpecification{T,U}
 end
 
+NoThrowTransform(args...) = NoThrowTransform(TransformSpecification(args...))
+NoThrowTransform(; kwargs...) = NoThrowTransform(TransformSpecification(; kwargs...))
+
 """
-    NoThrowTransform(specification::T) -> NoThrowTransform{T,T}
+    NoThrowTransform(specification::Type)
 
 Create [`NoThrowTransform`](@ref) that meets the criteria of an identity NoThrowTransform,
 i.e., [`is_identity_no_throw_transform`](@ref).
@@ -207,51 +225,38 @@ function NoThrowTransform(specification::Type)
     return NoThrowTransform(specification, specification, identity_no_throw_result)
 end
 
-input_specification(ntt::NoThrowTransform) = ntt.input_specification
+input_specification(ntt::NoThrowTransform) = input_specification(ntt.transform_spec)
 
 function output_specification(ntt::NoThrowTransform)
-    return NoThrowResult{ntt.output_specification}
+    spec = output_specification(ntt.transform_spec)
+    return spec <: NoThrowResult ? spec : NoThrowResult{spec}
 end
-
-"""
-    interpret_input(::Type{T}, input::T) where {T}
-    interpret_input(::Type{T}, input::T) where {T<:Legolas.AbstractRecord}
-    interpret_input(spec::Type{<:Legolas.AbstractRecord}, input)
-    interpret_input(spec, input)
-
-Return `input` interpreted as type `T`: is same as `identity` function if `input`
-is already of type `T`; otherwise, attempts to construct or `Base.convert`s the
-the output type from the input. Will throw if conversion fails or is otherwise
-undefined.
-
-See also: [`transform!`](@ref)
-"""
-interpret_input(::Type{T}, input::T) where {T} = input
-# Required due to method ambiguity
-interpret_input(::Type{T}, input::T) where {T<:Legolas.AbstractRecord} = input
-interpret_input(spec::Type{<:Legolas.AbstractRecord}, input) = (spec)(input)
-interpret_input(spec, input) = convert(spec, input)
 
 """
     transform!(ntt::NoThrowTransform, input)
 
-Return [`NoThrowResult`](@ref) of applying `ntt.transform_fn` to `input`. Transform
+Return [`NoThrowResult`](@ref) of applying `ntt.transform_spec.transform_fn` to `input`. Transform
 will fail (i.e., return a `NoThrowResult{Missing}` if:
 * `input` does not conform to `input_specification(ntt)`, i.e.,
     `interpret_input(input_specification(ntt), input)` throws an error
-* `ntt.transform_fn` returns a `NoThrowResult{Missing}` when applied to the interpreted input,
-* `ntt.transform_fn` errors when applied to the interpreted input, or
-* the output generated by `ntt.transform_fn` is not a `Union{NoThrowResult{Missing},output_specification(ntt)}`
+* `ntt.transform_spec.transform_fn` returns a `NoThrowResult{Missing}` when applied to the interpreted input,
+* `ntt.transform_spec.transform_fn` errors when applied to the interpreted input, or
+* the output generated by `ntt.transform_spec.transform_fn` is not a `Union{NoThrowResult{Missing},output_specification(ntt)}`
 
 In any of these failure cases, this function will not throw, but instead will return
 the cause of failure in the output `violations` field.
+
+!!! note
+  For debugging purposes, it may be helpful to bypass the "no-throw" feature and
+  so as to have access to a callstack. To do this, use [`transform_unwrapped!`](@ref)
+  in place of `transform!`.
 
 See also: [`interpret_input`](@ref)
 """
 function transform!(ntt::NoThrowTransform, input)
     # Check that input meets specification
     InSpec = input_specification(ntt)
-    _input = try
+    input = try
         interpret_input(InSpec, input)
     catch e
         violations = "Input doesn't conform to specification `$(InSpec)`. Details: $e"
@@ -260,10 +265,9 @@ function transform!(ntt::NoThrowTransform, input)
 
     # Do transformation
     result = try
-        NoThrowResult(ntt.transform_fn(_input))
+        NoThrowResult(ntt.transform_spec.transform_fn(input))
     catch e
-        violations = "Unexpected transform violation for $(input_specification(ntt)). Details: $e"
-        return NoThrowResult(; violations)
+        return NoThrowResult(; violations="Unexpected violation. Details: $e")
     end
 
     # ...wrap it in a nothrow, so that any nested nothrows are correctly collapsed
@@ -281,8 +285,28 @@ end
 
 function Base.show(io::IO, p::NoThrowTransform)
     return print(io,
-                 "NoThrowTransform{$(p.input_specification),$(p.output_specification)}: `$(p.transform_fn)`")
+                 "NoThrowTransform{$(input_specification(p)),$(output_specification(p.transform_spec))}: `$(p.transform_spec.transform_fn)`")
 end
+
+"""
+    transform_unwrapped!(ntt::NoThrowTransform, input)
+
+Apply [`transform!`](@ref) on inner `ntt.transform_spec`, such that the resultant
+output will be of type `output_specification(ntt.transform_spec)` rather than a
+`NoThrowResult`, any failure _will_ result in throwing an error. Utility for debugging
+`NoThrowTransform`s.
+
+See also: [`transform_unwrapped`](@ref)
+"""
+transform_unwrapped!(ntt::NoThrowTransform, input) = transform!(ntt.transform_spec, input)
+
+"""
+    transform_unwrapped(ntt::NoThrowTransform, input)
+
+Non-mutating implmementation of [`transform_unwrapped!`](@ref); applies
+`transform(ntt.transform_spec, input)`.
+"""
+transform_unwrapped(ntt::NoThrowTransform, input) = transform(ntt.transform_spec, input)
 
 """
     identity_no_throw_result(result) -> NoThrowResult
@@ -299,29 +323,13 @@ Check if `ntt` meets the definition of an identity NoThrowTransform, namely,
 transform function is [`identity_no_throw_result`](@ref).
 """
 function is_identity_no_throw_transform(ntt::NoThrowTransform)
-    if ntt.input_specification != ntt.output_specification
+    if input_specification(ntt) != output_specification(ntt.transform_spec)
         @debug "Input and output schemas are not identical: $ntt"
         return false
     end
-    is_identity = isequal(ntt.transform_fn, identity_no_throw_result)
+    is_identity = isequal(ntt.transform_spec.transform_fn, identity_no_throw_result)
     if !is_identity
-        @debug "`transform_fn` (`$(ntt.transform_fn)`) is not `identity_no_throw_result`"
+        @debug "`transform_fn` (`$(ntt.transform_spec.transform_fn)`) is not `identity_no_throw_result`"
     end
     return is_identity
-end
-
-#####
-##### Shared utilities
-#####
-
-for pred in (:(==), :(isequal)),
-    T in [AbstractTransformSpecification, NoThrowResult, NoThrowTransform]
-
-    @eval function Base.$pred(x::$T, y::$T)
-        return all(p -> $pred(getproperty(x, p), getproperty(y, p)), fieldnames($T))
-    end
-end
-
-function Base.:(==)(x::NoThrowResult{Missing}, y::NoThrowResult{Missing})
-    return x.warnings == y.warnings && x.violations == y.violations
 end
