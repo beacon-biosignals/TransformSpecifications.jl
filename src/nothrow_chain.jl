@@ -8,7 +8,7 @@
 Helper struct, used to construct [`NoThrowTransformChain`](@ref)s. Requires fields
 * `name::String`: Name of step, must be unique across a constructed chain
 * `transform_spec::AbstractTransformSpecification`: Transform applied by step
-* `input_constructor`: Function that takes in a Dictionary with keys that are the
+* `input_assembler::UpstreamOutputsTransform`: Transform that takes in a Dictionary with keys that are the
     names of upstream steps; the value of each of these keys is the output of that
     upstream_step, as specified by `output_specification(upstream_step)`. The constructor
     should return a `NamedTuple` that can be converted to specification
@@ -16,8 +16,30 @@ Helper struct, used to construct [`NoThrowTransformChain`](@ref)s. Requires fiel
 """
 struct ChainStep
     name::String
+    input_assembler::Union{TransformSpecification,Nothing}
     transform_spec::AbstractTransformSpecification
-    input_constructor::Any
+
+    function ChainStep(name, input_assembler, transform_spec)
+        # TODO: won't need this if we figure out a different way to handle
+        # the type of `input_assembler`
+        if !(isnothing(input_assembler)  || is_input_assembler(input_assembler))
+            throw(ArgumentError("Unsupported `input_assembler` type"))
+        end
+        return new(name, input_assembler, transform_spec)
+    end
+end
+
+# Special transform that is used to glue chain components into a dag
+# Should each chain step truly have one, or should they be added to the chain
+# in the same way the others are? Prob this is fine, since it's called at
+# run time...
+#TODO-help: I _think_ I want to make this a type, but it's kinda annoying to have to specify ANOTHER type, when
+# really it is just an instance of a TransformSpecification.
+# At this point I'm confused, though!
+make_input_assembler(conversion_fn) = TransformSpecification(Dict{String,Any}, NamedTuple{Symbol,Any}, conversion_fn)
+
+function is_input_assembler(ts::AbstractTransformSpecification)
+    return input_specification(ts) == Dict{String,Any} && output_specification(ts) == NamedTuple{Symbol,Any}
 end
 
 """
@@ -30,9 +52,9 @@ first element in `step_transforms`; the chain's `output_specification` is that o
 element in the `step_transforms`.
 
 The steps are stored internally as an `OrderedDict{:String,AbstractTransformSpecification}`
-of `<step name> => <step transform>`, along with the instructions (`step_input_constructors`)
+of `<step name> => <step transform>`, along with the instructions (`step_input_assemblers`)
 for constructing the input to each step as a function of all previous ouput component
-results. Each key in `step_transforms` has a corresponding key in `step_input_constructors`.
+results. Each key in `step_transforms` has a corresponding key in `step_input_assemblers`.
 (This input construction approach/type may change in an upcoming release.)
 
 To grant downstream access to all fields passed into the first step, the first step should
@@ -48,34 +70,36 @@ input construction function must be `nothing`.
 
 ## Fields
 
-- `step_transforms::OrderedDict{String,AbstractTransformSpecification}` Ordered processing steps
-- `step_input_constructors::Dict{String,Function}` Dictionary with functions for constructing the input
+- `step_transforms::OrderedDict{String,AbstractTransformSpecification}` Ordered dictionary of processing steps
+- `step_input_assemblers::Dict{String,Function}` Dictionary with functions for constructing the input
     for each key in `step_transforms` as a function that takes in a Dict{String,NoThrowResult}
     of all upstream `step_transforms` results.
+- `io_mapping::Dict{String,Dict{Symbol,Any}}` Internal mapping of upstream step
+    outputs to downstream inputs, used to e.g. valdiate the transform dag
 
 ## Example
 
-TODO-future
 ```jldoctest
 ```
 """
 struct NoThrowTransformChain <: AbstractTransformSpecification
     step_transforms::OrderedDict{String,NoThrowTransform}
-    step_input_constructors::Dict{String,Any}
-    io_mapping::Dict{String,Dict{Symbol,Any}}
+    step_input_assemblers::Dict{String,Any}
+    io_mapping::Dict{String,Any}
 
     function NoThrowTransformChain(init_step::ChainStep)
-        if !isnothing(init_step.input_constructor)
-            throw(ArgumentError("Initial step's input constructor must be `nothing` (`$(init_step.input_constructor)`)"))
+        if !isnothing(init_step.input_assembler)
+            throw(ArgumentError("Initial step's input constructor must be `nothing` (`$(init_step.input_assembler)`)"))
         end
-        transform_spec = init_step.transform_spec isa NoThrowTransform ?
-                         init_step.transform_spec : NoThrowTransform(transform_spec)
-        step_transforms = OrderedDict(init_step.name => transform_spec)
-        step_input_constructors = Dict(init_step.name => nothing)
-        io_mapping = Dict(init_step.name => _field_map(output_specification(transform_spec)))
-        return new(step_transforms, step_input_constructors, io_mapping)
+        step_transforms = OrderedDict(init_step.name => _no_throw_transform(init_step.transform_spec))
+        step_input_assemblers = Dict(init_step.name => nothing)
+        io_mapping = Dict{String,Dict{Symbol,Any}}(init_step.name => construct_field_map(output_specification(transform_spec)))
+        return new(step_transforms, step_input_assemblers, io_mapping)
     end
 end
+
+_no_throw_transform(t::NoThrowTransform) = t
+_no_throw_transform(t::AbstractTransformSpecification) = NoThrowTransform(t)
 
 function NoThrowTransformChain(steps::Vector{<:ChainStep})
     length(steps) == 0 &&
@@ -87,17 +111,14 @@ function NoThrowTransformChain(steps::Vector{<:ChainStep})
     return chain
 end
 
-function _field_map(specification::Type{<:NoThrowResult}; kwargs...)
-    return _field_map(result_type(specification); kwargs...)
-end
+_field_map(type::Type{<:NoThrowResult}) = _field_map(result_type(type))
+# _field_map(type::Legolas.AbstractRecord) = _field_map(type) # Do you want to recurse? Add this!
+_field_map(type) = type
 
-function _field_map(specification; recurse_into_legolas_schemas::Bool=false)
+construct_field_map(type::Type{<:NoThrowResult}) = construct_field_map(result_type(type))
+function construct_field_map(specification)
     m = map(zip(fieldnames(specification), fieldtypes(specification))) do (name, type)
-        if recurse_into_legolas_schemas && type <: Legolas.AbstractRecord
-            # TODO-future: do this recursively? For now, only one layer deep
-            return _field_map(; recurse_into_legolas_schemas=false)
-        end
-        return name => type
+        return name => _field_map(type)
     end
     return Dict(m)
 end
@@ -105,18 +126,18 @@ end
 Base.length(chain::NoThrowTransformChain) = length(chain.step_transforms)
 
 function getstep(chain::NoThrowTransformChain, name::String)
-    return ChainStep(name, chain.step_transforms[name], chain.step_input_constructors[name])
+    return ChainStep(name, chain.step_transforms[name], chain.step_input_assemblers[name])
 end
 
 function getstep(chain::NoThrowTransformChain, step_index::Int)
     name = keys(chain.step_transforms)[step_index]
-    return ChainStep(name, chain.step_transforms[name], chain.step_input_constructors[name])
+    return ChainStep(name, chain.step_transforms[name], chain.step_input_assemblers[name])
 end
 
 #TODO-Future: consider making a constructor that special-cases when taking in
 # a specification that has a single field (e.g., a Samples object or something)
 # instead of doing this version that is geared at named tuple creation
-function _validate_input_constructor(chain::NoThrowTransformChain, step_constructor)
+function _validate_input_assembler(chain::NoThrowTransformChain, step_constructor)
     # Do all the fields required by the constructor exist in the preceding steps' output?
     mock_input = step_constructor(chain.io_mapping) # Will throw if any field doesn't exist
 
@@ -133,13 +154,13 @@ function Base.push!(chain::NoThrowTransformChain, step::ChainStep)
     # Safety first!
     haskey(chain.step_transforms, step.name) &&
         throw(ArgumentError("Key `$(step.name)` already exists in chain!"))
-    _validate_input_constructor(chain, step.input_constructor)
+    _validate_input_assembler(chain, step.input_assembler)
 
     # Forge it!
     push!(chain.step_transforms, step.name => step.transform_spec)
-    push!(chain.step_input_constructors, step.name => step.input_constructor)
+    push!(chain.step_input_assemblers, step.name => step.input_assembler)
     push!(chain.io_mapping,
-          step.name => _field_map(output_specification(step.transform_spec)))
+          step.name => construct_field_map(output_specification(step.transform_spec)))
     return chain
 end
 
@@ -196,7 +217,7 @@ function transform!(chain::NoThrowTransformChain, input)
             end
         else
             # Construct
-            input_nt = chain.step_input_constructors[name](component_results)
+            input_nt = chain.step_input_assemblers[name](component_results)
 
             # prob don't need this try/catch, as we can pass into the function as a
             # named tuple...but this way we know that it failed at this specific stage
