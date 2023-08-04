@@ -21,7 +21,7 @@ export NoThrowResult, NoThrowTransform, nothrow_succeeded, is_identity_no_throw_
        transform_unwrapped!, transform_unwrapped
 
 include("nothrow_chain.jl")
-export NoThrowTransformChain, ChainStep
+export NoThrowTransformChain, ChainStep, get_step
 
 #####
 ##### Base extensions

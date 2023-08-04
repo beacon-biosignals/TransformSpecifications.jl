@@ -57,7 +57,7 @@ end
 
 """
     NoThrowTransformChain <: AbstractTransformSpecification
-    NoThrowTransformChain(steps::Vector{ChainStep})
+    NoThrowTransformChain(steps::AbstractVector{ChainStep})
 
 Processing component that runs a sequence of [`AbstractTransformSpecification`](@ref) steps,
 by calling [`transform!`](@ref) on each step in order. The chain's `input_specification` is that of the
@@ -93,6 +93,7 @@ input construction function must be `nothing`.
 
 ## Example
 
+TODO
 ```jldoctest
 ```
 """
@@ -112,7 +113,7 @@ struct NoThrowTransformChain <: AbstractTransformSpecification
     end
 end
 
-function NoThrowTransformChain(steps::Vector{<:ChainStep})
+function NoThrowTransformChain(steps::AbstractVector{<:ChainStep})
     length(steps) == 0 &&
         throw(ArgumentError("At least one step required to construct a chain"))
     chain = NoThrowTransformChain(first(steps))
@@ -122,27 +123,18 @@ function NoThrowTransformChain(steps::Vector{<:ChainStep})
     return chain
 end
 
-_field_map(type::Type{<:NoThrowResult}) = _field_map(result_type(type))
-# _field_map(type::Legolas.AbstractRecord) = _field_map(type) # Do you want to recurse? Add this!
-_field_map(type) = type
+function Base.push!(chain::NoThrowTransformChain, step::ChainStep)
+    # Safety first!
+    haskey(chain.step_transforms, step.name) &&
+        throw(ArgumentError("Key `$(step.name)` already exists in chain!"))
+    _validate_input_assembler(chain, step.input_assembler)
 
-construct_field_map(type::Type{<:NoThrowResult}) = construct_field_map(result_type(type))
-function construct_field_map(specification)
-    m = map(zip(fieldnames(specification), fieldtypes(specification))) do (name, type)
-        return name => _field_map(type)
-    end
-    return Dict(m)
-end
-
-Base.length(chain::NoThrowTransformChain) = length(chain.step_transforms)
-
-function getstep(chain::NoThrowTransformChain, name::String)
-    return ChainStep(name, chain.step_transforms[name], chain.step_input_assemblers[name])
-end
-
-function getstep(chain::NoThrowTransformChain, step_index::Int)
-    name = keys(chain.step_transforms)[step_index]
-    return ChainStep(name, chain.step_transforms[name], chain.step_input_assemblers[name])
+    # Forge it!
+    push!(chain.step_transforms, step.name => NoThrowTransform(step.transform_spec))
+    push!(chain.step_input_assemblers, step.name => step.input_assembler) #TODO: make NoThrowTransform ?
+    push!(chain._step_output_fields,
+          step.name => construct_field_map(output_specification(step.transform_spec)))
+    return chain
 end
 
 #TODO-Future: consider making a constructor that special-cases when taking in
@@ -163,18 +155,45 @@ function _validate_input_assembler(chain::NoThrowTransformChain,
     return nothing
 end
 
-function Base.push!(chain::NoThrowTransformChain, step::ChainStep)
-    # Safety first!
-    haskey(chain.step_transforms, step.name) &&
-        throw(ArgumentError("Key `$(step.name)` already exists in chain!"))
-    _validate_input_assembler(chain, step.input_assembler)
+"""
+    construct_field_map(type::Type{<:NoThrowResult})
+    construct_field_map(type)
 
-    # Forge it!
-    push!(chain.step_transforms, step.name => NoThrowTransform(step.transform_spec))
-    push!(chain.step_input_assemblers, step.name => step.input_assembler) #TODO: make NoThrowTransform ?
-    push!(chain._step_output_fields,
-          step.name => construct_field_map(output_specification(step.transform_spec)))
-    return chain
+Return a `Dict` where keys are `fieldnames(type)` and the value of each key is that
+field's own type. Constructed by calling `_field_map` on each input field's
+type.
+
+When `type` is a `NoThrowResult{T}`, generate mapping based on unwrapped type `T`.
+
+To recurse into a specific type `MyType`, implement
+```
+TransformSpecification._field_map(t::Type{MyType}) = construct_field_map(t)
+```
+"""
+construct_field_map(type::Type{<:NoThrowResult}) = construct_field_map(result_type(type))
+function construct_field_map(type)
+    return Dict(map(zip(fieldnames(type), fieldtypes(type))) do (fieldname, fieldtype)
+                    return fieldname => _field_map(fieldtype)
+                end)
+end
+
+_field_map(type::Type{<:NoThrowResult}) = _field_map(result_type(type))
+_field_map(type::Type) = type
+
+Base.length(chain::NoThrowTransformChain) = length(chain.step_transforms)
+
+"""
+    get_step(chain::NoThrowTransformChain, name::String) -> ChainStep
+    get_step(chain::NoThrowTransformChain, step_index::Int) -> ChainStep
+
+Return `ChainStep` with `name` or `step_index`.
+"""
+function get_step(chain::NoThrowTransformChain, name::String)
+    return ChainStep(name, chain.step_input_assemblers[name], chain.step_transforms[name])
+end
+
+function get_step(chain::NoThrowTransformChain, step_index::Int)
+    return get_step(chain, collect(keys(chain.step_transforms))[step_index])
 end
 
 """

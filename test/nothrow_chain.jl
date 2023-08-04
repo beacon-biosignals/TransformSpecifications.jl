@@ -15,7 +15,13 @@ end
     woo::String = "eee"
 end
 
-@testset "`NoThrowTransformChain`" begin
+@schema "mytype" TestType
+@version TestTypeV1 begin
+    schemafoo::SchemaFooV1
+    str::String
+end
+
+@testset "Basic `NoThrowTransformChain`" begin
     using TransformSpecifications: input_assembler
 
     steps = [ChainStep("init", nothing,
@@ -40,6 +46,11 @@ end
         @test issetequal(keys(chain.step_input_assemblers), keys(chain.step_transforms))
         @test issetequal(keys(chain._step_output_fields), keys(chain.step_transforms))
         @test length(steps) == length(chain) == 3
+        @test isequal(steps, map(i -> get_step(chain, i), 1:length(chain)))
+        @test isequal(steps, map(n -> get_step(chain, n), [s.name for s in steps]))
+
+        @test_throws KeyError get_step(chain, "nonexistent_step")
+        @test_throws BoundsError get_step(chain, 15)
     end
 
     @testset "Externals" begin
@@ -62,10 +73,18 @@ end
     end
 end
 
-@testset "Cons" begin
-    NoThrowTransformChain([ChainStep("init", nothing,
-                                     TransformSpecification(SchemaFooV1, SchemaFooV1,
-                                                            identity))])
+@testset "Basics" begin
+    step_a = ChainStep("init", nothing,
+                       TransformSpecification(SchemaFooV1, SchemaFooV1, identity))
+    step_b = ChainStep("init", nothing,
+                       NoThrowTransform(SchemaFooV1, SchemaFooV1, identity))
+    chain_a = NoThrowTransformChain(step_a)
+    chain_b = NoThrowTransformChain(step_b)
+    chain_c = NoThrowTransformChain([step_a])
+
+    @test isequal(chain_a, chain_b)
+    @test isequal(chain_a, chain_c)
+    @test chain_a == chain_b == chain_c
 end
 
 @testset "Construction errors" begin
@@ -96,12 +115,40 @@ end
               ChainStep("step2", input_assembler(d -> (; foo=d["step1"][:x])), ts)]
         @test_throws KeyError(:x) NoThrowTransformChain(ch)
 
+        # Can't wrap a broken test_throws BUT this should throw in the future,
+        # when additional validation added!
         ch = [ChainStep("step1", nothing, ts),
               ChainStep("step2", input_assembler(d -> (; foo=d["step1"][:foo])), ts),
               ChainStep("step3", input_assembler(d -> (; foo=d["step1"][:foo])), ts)]
         err = ArgumentError("Input assembler for step `step3` cannot depend on `[step1][foo]`; output already used by step `step2`")
-        @test_broken (@test_throws err NoThrowTransformChain(ch))
+        @test_broken false # (@test_throws err NoThrowTransformChain(ch))
+    end
+end
 
+@testset "Field maps" begin
+    using TransformSpecifications: _field_map, construct_field_map
+    @testset "`_field_map`" begin
+        @test _field_map(String) == _field_map(NoThrowResult{String}) ==String
+        @test _field_map(Dict) == _field_map(NoThrowResult{Dict}) ==Dict
+        @info _field_map(SchemaFooV1) == _field_map(NoThrowResult{SchemaFooV1}) == SchemaFooV1
+    end
 
+    @testset "`construct_field_map`" begin
+        @test construct_field_map(String) == Dict{Any, Any}()
+        @test construct_field_map(Dict) isa Dict{Symbol, Type}
+        @info construct_field_map(SchemaFooV1)
+        @test construct_field_map(SchemaFooV1) == Dict{Symbol, DataType}(:list => Vector{Int64}, :foo => String))
+    end
+
+    @testset "Recurse into specification" begin
+        orig = construct_field_map(TestTypeV1)
+        @test orig == Dict(:schemafoo => SchemaFooV1, :str => String)
+
+        # If we _want_ to be able to recurse into a specific specification type,
+        # define an overloaded `_field_map` implementation of it:
+        TransformSpecifications._field_map(t::Type{SchemaFooV1}) = construct_field_map(t)
+        recursed = construct_field_map(TestTypeV1)
+        @test recursed == Dict(:schemafoo => Dict(:list => Vector{Int64}, :foo => String),
+                               :str => String)
     end
 end
