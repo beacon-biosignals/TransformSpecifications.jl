@@ -279,8 +279,9 @@ function transform!(ntt::NoThrowTransform, input)
 
     # Check that output meets specification
     OutSpec = output_specification(ntt)
-    if ntt_result isa Union{OutSpec,NoThrowResult{Missing}}
-        return ntt_result::Union{OutSpec,NoThrowResult{Missing}}
+    type = result_type(OutSpec)
+    if ntt_result isa Union{OutSpec,NoThrowResult{Missing},NoThrowResult{<:type}}
+        return ntt_result::Union{OutSpec,NoThrowResult{Missing},NoThrowResult{<:type}}
     end
     violations = "Output doesn't conform to specification `$(OutSpec)`; is instead a `$(typeof(ntt_result))`"
     return NoThrowResult(; warnings=ntt_result.warnings, violations)::NoThrowResult{Missing}

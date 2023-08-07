@@ -73,7 +73,6 @@ end
     end
 end
 
-
 @testset "Basic `NoThrowTransformChain`" begin
     using TransformSpecifications: input_assembler
 
@@ -125,35 +124,29 @@ end
         @test isequal(chain_output, chain_output2)
     end
 
-
-    @testset "Failures handled" begin
-        _check_violation = (result, err_str) -> begin
-            @test !nothrow_succeeded(result)
-            @test isequal(err_str, only(result.violations))
-        end
-
-        let
-            #TODO-HERE! This test is failing---update error message to be as expected,
-            # then fix test! :)
-            result = transform!(chain, SchemaBarV1(; var1="yay", var2="whee"))
-            _check_violation(result, "")
+    @testset "Nonconforming input fails" begin
+        result = transform!(chain, SchemaBarV1(; var1="yay", var2="whee"))
+        @test !nothrow_succeeded(result)
+        err_str = "Input to step `init` doesn't conform to specification `SchemaFooV1`. \
+                   Details: ArgumentError(\"Invalid value set for field `foo`, expected String, \
+                   got a value of type Missing (missing)\")"
+        @test isequal(err_str, only(result.violations))
     end
-
 end
 
 @testset "Helper utilities" begin
     using TransformSpecifications: _field_map, construct_field_map
     @testset "`_field_map`" begin
-        @test _field_map(String) == _field_map(NoThrowResult{String}) ==String
-        @test _field_map(Dict) == _field_map(NoThrowResult{Dict}) ==Dict
-        @info _field_map(SchemaFooV1) == _field_map(NoThrowResult{SchemaFooV1}) == SchemaFooV1
+        @test _field_map(String) == _field_map(NoThrowResult{String}) == String
+        @test _field_map(Dict) == _field_map(NoThrowResult{Dict}) == Dict
+        @test _field_map(SchemaFooV1) == _field_map(NoThrowResult{SchemaFooV1})
     end
 
     @testset "`construct_field_map`" begin
-        @test construct_field_map(String) == Dict{Any, Any}()
-        @test construct_field_map(Dict) isa Dict{Symbol, Type}
-        @info construct_field_map(SchemaFooV1)
-        @test construct_field_map(SchemaFooV1) == Dict{Symbol, DataType}(:list => Vector{Int64}, :foo => String))
+        @test construct_field_map(String) == Dict{Any,Any}()
+        @test construct_field_map(Dict) isa Dict{Symbol,Type}
+        @test construct_field_map(SchemaFooV1) ==
+              Dict{Symbol,DataType}(:list => Vector{Int64}, :foo => String)
     end
 
     @testset "Recurse into specification" begin

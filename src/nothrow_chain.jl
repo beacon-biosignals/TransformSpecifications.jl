@@ -237,14 +237,17 @@ function transform!(chain::NoThrowTransformChain, input)
     warnings = String[]
     component_results = OrderedDict{String,Any}()
     for (i_step, (name, step)) in enumerate(chain.step_transforms)
-        @debug "Applying component `$name`..."
+        @debug "Applying step `$name`..."
         InSpec = input_specification(step)
         input = if i_step == 1
             # The initial input record does not need to be constructed---it already
             # exists---but it still needs to be validated
             input
         else
-            transform!(chain.step_input_assemblers[name], component_results)
+            nt_result = transform!(NoThrowTransform(chain.step_input_assemblers[name]), component_results)
+            nothrow_succeeded(nt_result) || return nt_result
+            append!(warnings, nt_result.warnings)
+            nt_result.result
         end
 
         # Check that input meets specification. Do it here rather than relying on
@@ -254,7 +257,7 @@ function transform!(chain::NoThrowTransformChain, input)
             interpret_input(InSpec, input) #(; input_nt...))
         catch e
             return NoThrowResult(; warnings,
-                                 violations=["Failed to construct input for step `$name`: $e"])
+                                 violations= "Input to step `$name` doesn't conform to specification `$(InSpec)`. Details: $e")
         end
 
         # Do transformation
