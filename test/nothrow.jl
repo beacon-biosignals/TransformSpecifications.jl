@@ -144,9 +144,15 @@ end
 
 @testset "`NoThrowTransform`" begin
     @testset "Conforming input succeeds" begin
-        ntt = NoThrowTransform(SchemaAV1, SchemaBV1, _ -> SchemaBV1(; name="yay"))
+        transform_fn = _ -> SchemaBV1(; name="yay")
+        ntt = NoThrowTransform(SchemaAV1, SchemaBV1, transform_fn)
         @test input_specification(ntt) == SchemaAV1
         @test output_specification(ntt) == NoThrowResult{SchemaBV1}
+
+        ntt_kwargs = NoThrowTransform(; input_specification=SchemaAV1,
+                                      output_specification=SchemaBV1,
+                                      transform_fn)
+        @test ntt == ntt_kwargs
 
         input_record = SchemaAV1(; foo="rabbit")
         result = transform!(ntt, input_record)
