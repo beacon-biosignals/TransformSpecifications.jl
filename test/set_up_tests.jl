@@ -9,6 +9,6 @@ using Test
 
 # For doctests
 if !isdefined(TransformSpecifications, :META) # avoids annoying warning if this has already been run once
-    DocMeta.setdocmeta!(TransformSpecifications, :DocTestSetup, :(using TransformSpecifications);
-                        recursive=true)
+    DocMeta.setdocmeta!(TransformSpecifications, :DocTestSetup,
+                        :(using TransformSpecifications); recursive=true)
 end

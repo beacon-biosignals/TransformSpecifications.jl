@@ -49,6 +49,12 @@ end
                                                           ntt)])
     end
 
+    @testset "Invalid input assembler" begin
+        ts = TransformSpecification(SchemaFooV1, SchemaFooV1, identity)
+        err = ArgumentError("Invalid `input_assembler`")
+        @test_throws err NoThrowTransformChain([ChainStep("foo", identity, ts)])
+    end
+
     @testset "Invalid step combinations" begin
         ts = TransformSpecification(SchemaFooV1, SchemaFooV1, identity)
         err = ArgumentError("Key `foo` already exists in chain!")
@@ -131,6 +137,12 @@ end
                    Details: ArgumentError(\"Invalid value set for field `foo`, expected String, \
                    got a value of type Missing (missing)\")"
         @test isequal(err_str, only(result.violations))
+    end
+
+    @testset "`_validate_input_assembler`" begin
+        using TransformSpecifications: _validate_input_assembler
+        @test isnothing(_validate_input_assembler(chain, nothing))
+        @test_throws KeyError _validate_input_assembler(chain, input_assembler(d -> d[:invalid_step]["foo"]))
     end
 end
 

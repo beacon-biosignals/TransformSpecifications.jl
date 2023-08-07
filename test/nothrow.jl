@@ -288,6 +288,7 @@ end
     end
 
     @testset "Identity `NoThrowTransform`" begin
+        using TransformSpecifications: identity_no_throw_result
         test_transform_fn(_) = NoThrowResult(SchemaBV1(; name="yay"))
         ntt_a = NoThrowTransform(SchemaAV1, SchemaBV1, test_transform_fn)
         @test !is_identity_no_throw_transform(ntt_a)
@@ -302,9 +303,11 @@ end
         ntt_c = NoThrowTransform(SchemaAV1)
         @test is_identity_no_throw_transform(ntt_c)
 
-        ntt_d = NoThrowTransform(SchemaAV1, SchemaAV1,
-                                 TransformSpecifications.identity_no_throw_result)
+        ntt_d = NoThrowTransform(SchemaAV1, SchemaAV1, identity_no_throw_result)
         @test is_identity_no_throw_transform(ntt_d)
         @test isequal(ntt_c, ntt_d)
+
+        @test isequal(NoThrowResult(SchemaAV1(; foo="yes")),
+                      transform!(NoThrowTransform(SchemaAV1), SchemaAV1(; foo="yes")))
     end
 end
