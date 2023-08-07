@@ -12,7 +12,7 @@ Helper struct, used to construct [`NoThrowTransformChain`](@ref)s. Requires fiel
     names of upstream steps; the value of each of these keys is the output of that
     upstream_step, as specified by `output_specification(upstream_step)`. The constructor
     should return a `NamedTuple` that can be converted to specification
-    `input_specification(transform_spec)` via [interpret_input`](@ref).
+    `input_specification(transform_spec)` via [convert_spec`](@ref).
 """
 struct ChainStep
     name::String
@@ -253,7 +253,7 @@ function transform!(chain::NoThrowTransformChain, input)
         # transform!(::NoThrowTransform, ...) so that any error warnings are more
         # informative
         try
-            interpret_input(InSpec, input) #(; input_nt...))
+            convert_spec(InSpec, input) #(; input_nt...))
         catch e
             return NoThrowResult(; warnings,
                                  violations="Input to step `$name` doesn't conform to specification `$(InSpec)`. Details: $e")
