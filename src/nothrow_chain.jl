@@ -29,7 +29,7 @@ end
 
 # TODO-help: I _think_ I want to make this a type, but it's kinda annoying to have
 # to specify ANOTHER concrete type, when it really is just an instance of a
-# TransformSpecification with pre-defined types. Help?!
+# TransformSpecification with pre-defined types. Thoughts?!
 """
     input_assembler(conversion_fn) -> TransformSpecification{Dict{String,Any}, NamedTuple}
 
@@ -131,7 +131,7 @@ function Base.push!(chain::NoThrowTransformChain, step::ChainStep)
 
     # Forge it!
     push!(chain.step_transforms, step.name => NoThrowTransform(step.transform_spec))
-    push!(chain.step_input_assemblers, step.name => step.input_assembler) #TODO: make NoThrowTransform ?
+    push!(chain.step_input_assemblers, step.name => step.input_assembler)
     push!(chain._step_output_fields,
           step.name => construct_field_map(output_specification(step.transform_spec)))
     return chain
@@ -244,7 +244,8 @@ function transform!(chain::NoThrowTransformChain, input)
             # exists---but it still needs to be validated
             input
         else
-            nt_result = transform!(NoThrowTransform(chain.step_input_assemblers[name]), component_results)
+            nt_result = transform!(NoThrowTransform(chain.step_input_assemblers[name]),
+                                   component_results)
             nothrow_succeeded(nt_result) || return nt_result
             append!(warnings, nt_result.warnings)
             nt_result.result
@@ -257,7 +258,7 @@ function transform!(chain::NoThrowTransformChain, input)
             interpret_input(InSpec, input) #(; input_nt...))
         catch e
             return NoThrowResult(; warnings,
-                                 violations= "Input to step `$name` doesn't conform to specification `$(InSpec)`. Details: $e")
+                                 violations="Input to step `$name` doesn't conform to specification `$(InSpec)`. Details: $e")
         end
 
         # Do transformation
