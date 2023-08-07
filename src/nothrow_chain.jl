@@ -93,9 +93,7 @@ input construction function must be `nothing`.
 
 ## Example
 
-TODO
-```jldoctest
-```
+
 """
 struct NoThrowTransformChain <: AbstractTransformSpecification
     step_transforms::OrderedDict{String,NoThrowTransform}

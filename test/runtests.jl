@@ -5,6 +5,10 @@ include("set_up_tests.jl")
         Aqua.test_all(TransformSpecifications; ambiguities=false)
     end
 
+    @testset "Doctests" begin
+        doctest(TransformSpecifications)
+    end
+
     @testset "`TransformSpecification`" begin
         include("transform.jl")
     end
