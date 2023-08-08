@@ -56,7 +56,8 @@ is_input_assembler(::Any) = false
 ##### `NoThrowTransformChain`
 #####
 
-const DOCTEST_nothrowchain_ex1_OUTPUT = """
+#TODO: make const
+DOCTEST_nothrowchain_ex1_OUTPUT = """
 flowchart LR
 
 %% Add steps (nodes)

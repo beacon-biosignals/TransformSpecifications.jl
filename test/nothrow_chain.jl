@@ -82,21 +82,20 @@ end
 @testset "Basic `NoThrowTransformChain`" begin
     using TransformSpecifications: input_assembler
 
-    steps = [ChainStep("init", nothing,
-                       NoThrowTransform(SchemaFooV1, SchemaBarV1,
-                                        x -> SchemaBarV1(; var1=x.foo * "_a",
-                                                         var2=x.foo * "_a2"))),
-             ChainStep("middle",
-                       input_assembler(d -> (; foo=d["init"][:var1])),
-                       NoThrowTransform(SchemaFooV1, SchemaFooV1,
-                                        x -> SchemaFooV1(; foo=x.foo * "_b"))),
-             ChainStep("final",
-                       input_assembler(d -> (; var1=d["init"][:var2],
-                                             var2=d["middle"][:foo])),
+    fn_step_a(x) = SchemaBarV1(; var1=x.foo * "_a", var2=x.foo * "_a2")
+    fn_step_b(x) = SchemaFooV1(; foo=x.foo * "_b")
+    fn_step_c(x) = SchemaFooV1(; foo=string(x.var1, "_WOW_", x.var2))
+
+    steps = [ChainStep("step_a", nothing,
+                       NoThrowTransform(SchemaFooV1, SchemaBarV1, fn_step_a)),
+             ChainStep("step_b",
+                       input_assembler(d -> (; foo=d["step_a"][:var1])),
+                       NoThrowTransform(SchemaFooV1, SchemaFooV1, fn_step_b)),
+             ChainStep("step_c",
+                       input_assembler(d -> (; var1=d["step_a"][:var2],
+                                             var2=d["step_b"][:foo])),
                        NoThrowTransform(SchemaBarV1, SchemaFooV1,
-                                        x -> SchemaFooV1(;
-                                                         foo=string(x.var1, "_WOW_",
-                                                                    x.var2))))]
+                                        fn_step_c))]
     chain = NoThrowTransformChain(steps)
     @test chain isa NoThrowTransformChain
 
@@ -133,7 +132,7 @@ end
     @testset "Nonconforming input fails" begin
         result = transform!(chain, SchemaBarV1(; var1="yay", var2="whee"))
         @test !nothrow_succeeded(result)
-        err_str = "Input to step `init` doesn't conform to specification `SchemaFooV1`. \
+        err_str = "Input to step `step_a` doesn't conform to specification `SchemaFooV1`. \
                    Details: ArgumentError(\"Invalid value set for field `foo`, expected String, \
                    got a value of type Missing (missing)\")"
         @test isequal(err_str, only(result.violations))
@@ -147,7 +146,8 @@ end
     end
 
     @testset "`mermaidify" begin
-        ref_test_file = joinpath(pkgdir(TransformSpecifications), "test", "reference_tests", "mermaid_nothrowchain.md")
+        ref_test_file = joinpath(pkgdir(TransformSpecifications), "test", "reference_tests",
+                                 "mermaid_nothrowchain.md")
         ref_str = read(ref_test_file, String)
         test_str = ("```mermaid\n$(mermaidify(chain))\n```\n")
         @test isequal(ref_str, test_str)
