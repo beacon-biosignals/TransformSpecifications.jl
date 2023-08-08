@@ -56,6 +56,62 @@ is_input_assembler(::Any) = false
 ##### `NoThrowTransformChain`
 #####
 
+#TODO: const
+DOCTEST_nothrowchain_ex1_OUTPUT = """
+flowchart LR
+
+%% Add steps (nodes)
+subgraph STEP_A[Step a]
+  direction TB
+  subgraph STEP_A_InputSchema[Input: ExampleOneVarSchemaV1]
+    direction RL
+    STEP_A_InputSchemavar[var]
+  end
+  subgraph STEP_A_OutputSchema[Output: ExampleOneVarSchemaV1]
+    direction RL
+    STEP_A_OutputSchemaresult[result]
+    STEP_A_OutputSchemaviolations[violations]
+    STEP_A_OutputSchemawarnings[warnings]
+  end
+  STEP_A_InputSchema == fn_a ==> STEP_A_OutputSchema
+end
+subgraph STEP_B[Step b]
+  direction TB
+  subgraph STEP_B_InputSchema[Input: ExampleOneVarSchemaV1]
+    direction RL
+    STEP_B_InputSchemavar[var]
+  end
+  subgraph STEP_B_OutputSchema[Output: ExampleOneVarSchemaV1]
+    direction RL
+    STEP_B_OutputSchemaresult[result]
+    STEP_B_OutputSchemaviolations[violations]
+    STEP_B_OutputSchemawarnings[warnings]
+  end
+  STEP_B_InputSchema == fn_b ==> STEP_B_OutputSchema
+end
+subgraph STEP_C[Step c]
+  direction TB
+  subgraph STEP_C_InputSchema[Input: ExampleTwoVarSchemaV1]
+    direction RL
+    STEP_C_InputSchemavar1[var1]
+    STEP_C_InputSchemavar2[var2]
+  end
+  subgraph STEP_C_OutputSchema[Output: ExampleOneVarSchemaV1]
+    direction RL
+    STEP_C_OutputSchemaresult[result]
+    STEP_C_OutputSchemaviolations[violations]
+    STEP_C_OutputSchemawarnings[warnings]
+  end
+  STEP_C_InputSchema == fn_c ==> STEP_C_OutputSchema
+end
+
+%% Link steps (nodes)
+STEP_A ~~~ STEP_B
+STEP_B ~~~ STEP_C
+
+%% Link step i/o fields
+"""
+
 """
     NoThrowTransformChain <: AbstractTransformSpecification
     NoThrowTransformChain(steps::AbstractVector{ChainStep})
@@ -163,6 +219,30 @@ transform!(chain, ExampleTwoVarSchemaV1(; var1="wrong", var2="input schema"))
 # output
 NoThrowResult{Missing}: Transform failed
   ❌ Input to step `step_a` doesn't conform to specification `ExampleOneVarSchemaV1`. Details: ArgumentError("Invalid value set for field `var`, expected String, got a value of type Missing (missing)")
+```
+
+To visualize this chain, you may want to generate a [mermaid plot](https://mermaid.js.org/).
+To do this, use [`mermaidify`](@ref):
+
+```jldoctest nothrowchain_ex1
+mermaid_str = mermaidify(chain)
+print(mermaid_str)
+
+# output
+$DOCTEST_nothrowchain_ex1_OUTPUT
+```
+
+By wrapping this string in a "mermaid" code block in a markdown document,
+it can be rendered graphically. If in GitHub, this will happen automatically;
+if in e.g. Documenter.jl, [additional setup will be required](https://github.com/JuliaDocs/Documenter.jl/issues/1943).
+
+In either case, do
+```julia
+md_mermaid = "```mermaid" * mermaid_str * "```"
+print(md_mermaid)
+will yield
+```mermaid
+$DOCTEST_nothrowchain_ex1_OUTPUT
 ```
 """
 struct NoThrowTransformChain <: AbstractTransformSpecification
