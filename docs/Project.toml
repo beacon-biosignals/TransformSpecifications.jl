@@ -1,6 +1,7 @@
 [deps]
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
-LegolasProcesses = "b92eaff8-8912-4b32-ad24-14d7c692d780"
+Legolas = "741b9549-f6ed-4911-9fbf-4a1c0c97f0cd"
+TransformSpecifications = "b92eaff8-8912-4b32-ad24-14d7c692d780"
 
 [compat]
 Documenter = "0.27.23"
