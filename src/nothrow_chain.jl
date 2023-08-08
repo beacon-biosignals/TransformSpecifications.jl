@@ -259,17 +259,17 @@ and for html (i.e., for Documenter.jl), do
 </div>
 ````
 This will then be displayed graphically as
-```@raw html
+````@raw html
 <svg style="display: block; margin: 0 auto;" width="5em" heigth="5em">
 	<circle cx="2.5em" cy="2.5em" r="2em" stroke="black" stroke-width=".1em" fill="red" />
 </svg>
-```
+````
 
-```@raw html
+````@raw html
 <div class="mermaid">
 $(DOCTEST_OUTPUT_nothrowchain_ex1)
 </div>
-```
+````
 """
 struct NoThrowTransformChain <: AbstractTransformSpecification
     step_transforms::OrderedDict{String,NoThrowTransform}
