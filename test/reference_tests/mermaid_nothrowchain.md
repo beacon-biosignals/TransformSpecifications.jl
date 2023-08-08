@@ -20,7 +20,7 @@ subgraph STEP_A[Step a]
     STEP_A_OutputSchemavar2{{"var2::String"}}
     class STEP_A_OutputSchemavar2 classSpecField
   end
-  STEP_A_InputSchema:::classSpec == fn_step_a ==> STEP_A_OutputSchema:::classSpec
+  STEP_A_InputSchema:::classSpec -- fn_step_a --> STEP_A_OutputSchema:::classSpec
 end
 subgraph STEP_B[Step b]
   direction TB
@@ -38,7 +38,7 @@ subgraph STEP_B[Step b]
     STEP_B_OutputSchemafoo{{"foo::String"}}
     class STEP_B_OutputSchemafoo classSpecField
   end
-  STEP_B_InputSchema:::classSpec == fn_step_b ==> STEP_B_OutputSchema:::classSpec
+  STEP_B_InputSchema:::classSpec -- fn_step_b --> STEP_B_OutputSchema:::classSpec
 end
 subgraph STEP_C[Step c]
   direction TB
@@ -56,12 +56,12 @@ subgraph STEP_C[Step c]
     STEP_C_OutputSchemafoo{{"foo::String"}}
     class STEP_C_OutputSchemafoo classSpecField
   end
-  STEP_C_InputSchema:::classSpec == fn_step_c ==> STEP_C_OutputSchema:::classSpec
+  STEP_C_InputSchema:::classSpec -- fn_step_c --> STEP_C_OutputSchema:::classSpec
 end
 
 %% Link steps (nodes)
-STEP_A:::classStep -.-> STEP_B:::classStep
-STEP_B:::classStep -.-> STEP_C:::classStep
+STEP_A:::classStep -..-> STEP_B:::classStep
+STEP_B:::classStep -..-> STEP_C:::classStep
 
 end
 OUTERLEVEL:::classOuter ~~~ OUTERLEVEL:::classOuter
@@ -70,11 +70,8 @@ OUTERLEVEL:::classOuter ~~~ OUTERLEVEL:::classOuter
 %% TODO-future
 
 %% Styling definitions
-classDef classStep fill:#fff,stroke:#000,stroke-width:1px;
-classDef classSpec fill:#fff,stroke:#000,stroke-width:1px;
-classDef classOuter fill:#fff,stroke:#000,stroke-width:0px;
+classDef classOuter fill:#cbd7e2,stroke:#000,stroke-width:0px;
+classDef classStep fill:#eeedff,stroke:#000,stroke-width:2px;
+classDef classSpec fill:#f8f7ff,stroke:#000,stroke-width:1px;
 classDef classSpecField fill:#fff,stroke:#000,stroke-width:1px;
-
-%% Link step i/o fields
-%% TODO-future
 ```

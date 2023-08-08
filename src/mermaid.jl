@@ -44,7 +44,7 @@ function _mermaid_subgraph_from_chain_step(step::ChainStep)
 
     node_contents = reduce(vcat,
                            [inputs_subgraph, outputs_subgraph,
-                            "$(node_key)_InputSchema:::classSpec == $(process.transform_spec.transform_fn) ==> $(node_key)_OutputSchema:::classSpec"])
+                            "$(node_key)_InputSchema:::classSpec -- $(process.transform_spec.transform_fn) --> $(node_key)_OutputSchema:::classSpec"])
     return _mermaid_subgraph(node_key, uppercasefirst(replace(string(key), "_" => " "));
                              contents=node_contents, direction="TB")
 end
@@ -96,9 +96,9 @@ end
 #     return links
 # end
 
-const DEFAULT_STEP_STYLE = "fill:#fff,stroke:#000,stroke-width:1px;"
-const DEFAULT_OUTER_STYLE = "fill:#fff,stroke:#000,stroke-width:0px;"
-const DEFAULT_SPEC_STYLE = "fill:#fff,stroke:#000,stroke-width:1px;"
+const DEFAULT_OUTER_STYLE = "fill:#cbd7e2,stroke:#000,stroke-width:0px;"
+const DEFAULT_STEP_STYLE = "fill:#eeedff,stroke:#000,stroke-width:2px;"
+const DEFAULT_SPEC_STYLE = "fill:#f8f7ff,stroke:#000,stroke-width:1px;"
 const DEFAULT_SPEC_FIELD_STYLE = "fill:#fff,stroke:#000,stroke-width:1px;"
 
 """
@@ -123,7 +123,7 @@ function mermaidify(chain::NoThrowTransformChain; direction="LR",
     # Add (hidden) links between steps to fix chain order
     keys_upper = map(_mermaid_key, collect(keys(chain)))
     for i_key in 2:length(keys_upper)
-        arrow = "-.->" #TODO: once fields are linked, replace this with "~~~"
+        arrow = "-..->" #TODO: once fields are linked, replace this with "~~~"
         push!(mermaid_lines,
               "$(keys_upper[i_key - 1]):::classStep $arrow $(keys_upper[i_key]):::classStep")
     end
@@ -135,12 +135,11 @@ function mermaidify(chain::NoThrowTransformChain; direction="LR",
 
     push!(mermaid_lines, "", "%% Styling definitions")
     for (name, style) in
-        [("classStep", style_step), ("classSpec", style_spec), ("classOuter", style_outer),
+        [("classOuter", style_outer), ("classStep", style_step), ("classSpec", style_spec),
          ("classSpecField", style_spec_field)]
         push!(mermaid_lines, "classDef $name $style")
     end
 
-    push!(mermaid_lines, "", "%% Link step i/o fields", "%% TODO-future")
     return join(mermaid_lines, "\n")
 end
 
