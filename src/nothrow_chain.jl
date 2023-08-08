@@ -94,17 +94,16 @@ input construction function must be `nothing`.
 
 ## Example
 
-```jldoctest ex1
-
+```jldoctest nothrowchain_ex1
 using Legolas: @schema, @version
 using TransformSpecifications: input_assembler
 
-@schema "example-in" ExampleOneVarSchema
+@schema "example-one-var" ExampleOneVarSchema
 @version ExampleOneVarSchemaV1 begin
     var::String
 end
 
-@schema "example-out" ExampleTwoVarSchema
+@schema "example-two-var" ExampleTwoVarSchema
 @version ExampleTwoVarSchemaV1 begin
     var1::String
     var2::String
@@ -136,7 +135,34 @@ chain = NoThrowTransformChain(steps)
 NoThrowTransformChain (ExampleOneVarSchemaV1 => ExampleOneVarSchemaV1):
   🌱  step_a: ExampleOneVarSchemaV1 => ExampleOneVarSchemaV1: `fn_a`
    ·  step_b: ExampleOneVarSchemaV1 => ExampleOneVarSchemaV1: `fn_b`
-  🌷  step_c: ExampleTwoVarSchemaV1 => ExampleOneVarSchemaV1: `fn_c`
+  🌷  step_c: ExampleOneVarSchemaV1 => ExampleOneVarSchemaV1: `fn_c`
+```
+This chain can then be applied to an input, just like a regular `TransformSpecification`
+can:
+```jldoctest nothrowchain_ex1
+input = ExampleOneVarSchemaV1(; var="initial_str")
+transform!(chain, input)
+
+# output
+NoThrowResult{ExampleOneVarSchemaV1}: Transform succeeded
+  ✅ result: ExampleOneVarSchemaV1:
+ :var  "initial_str_ainitial_str_a_b_c"
+```
+Similarly, this transform will fail if the input specification is violated---but
+because it returns a [`NoThrowResult`](@ref), it will fail gracefully:
+```jldoctest nothrowchain_ex1
+# What is the input specification?
+input_specification(chain)
+
+# output
+ExampleOneVarSchemaV1
+```
+```jldoctest nothrowchain_ex1
+transform!(chain, ExampleTwoVarSchemaV1(; var1="wrong", var2="input schema"))
+
+# output
+NoThrowResult{Missing}: Transform failed
+  ❌ Input to step `step_a` doesn't conform to specification `ExampleOneVarSchemaV1`. Details: ArgumentError("Invalid value set for field `var`, expected String, got a value of type Missing (missing)")
 ```
 
 """

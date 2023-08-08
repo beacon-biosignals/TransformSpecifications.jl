@@ -14,7 +14,7 @@ See also: [`TransformSpecification`](@ref)
 
 ## Example
 
-```jldoctest test2
+```jldoctest transform_ex1
 using Legolas: @schema, @version
 
 @schema "example-in" ExampleInSchema
@@ -36,7 +36,7 @@ p = TransformSpecification(ExampleInSchemaV1, ExampleOutSchemaV1, apply_example)
 # output
 TransformSpecification{ExampleInSchemaV1,ExampleOutSchemaV1}: `apply_example`
 ```
-```jldoctest test2
+```jldoctest transform_ex1
 transform!(p, ExampleInSchemaV1(; in_name="greetings"))
 
 # output

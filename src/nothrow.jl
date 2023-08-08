@@ -28,30 +28,30 @@ See also: [`nothrow_succeeded`](@ref)
 
 ## Example
 
-```jldoctest test1
+```jldoctest nothrow_ex1
 using Legolas: @schema, @version
-@schema "example" ExampleSchema
-@version ExampleSchemaV1 begin
+@schema "example" ExampleSchemaAA
+@version ExampleSchemaAAV1 begin
     name::String
 end
 
-NoThrowResult(ExampleSchemaV1(; name="yeehaw"))
+NoThrowResult(ExampleSchemaAAV1(; name="yeehaw"))
 
 # output
-NoThrowResult{ExampleSchemaV1}: Transform succeeded
-  ✅ result: ExampleSchemaV1:
+NoThrowResult{ExampleSchemaAAV1}: Transform succeeded
+  ✅ result: ExampleSchemaAAV1:
  :name  "yeehaw"
 ```
-```jldoctest test1
-NoThrowResult(ExampleSchemaV1(; name="huzzah"); warnings="Hark, watch your step...")
+```jldoctest nothrow_ex1
+NoThrowResult(ExampleSchemaAAV1(; name="huzzah"); warnings="Hark, watch your step...")
 
 # output
-NoThrowResult{ExampleSchemaV1}: Transform succeeded
+NoThrowResult{ExampleSchemaAAV1}: Transform succeeded
   ⚠️  Hark, watch your step...
-  ✅ result: ExampleSchemaV1:
+  ✅ result: ExampleSchemaAAV1:
  :name  "huzzah"
 ```
-```jldoctest test1
+```jldoctest nothrow_ex1
 NoThrowResult(; violations=["Epic fail!", "Slightly less epic fail!"],
                      warnings=["Uh oh..."])
 
@@ -156,51 +156,51 @@ that same output specification `NoThrowResult{T}`, and *not* `NoThrowResult{NoTh
 ## Example 1: Successful transformation
 
 Set-up:
-```jldoctest test2
+```jldoctest nothrow_ex2
 using Legolas: @schema, @version
 
-@schema "example-in" ExampleInSchema
-@version ExampleInSchemaV1 begin
+@schema "example-in" ExampleSchemaA
+@version ExampleSchemaAV1 begin
     in_name::String
 end
 
-@schema "example-out" ExampleOutSchema
-@version ExampleOutSchemaV1 begin
+@schema "example-out" ExampleSchemaB
+@version ExampleSchemaBV1 begin
     out_name::String
 end
 
 function apply_example(in_record)
     out_name = in_record.in_name * " earthling"
-    return ExampleOutSchemaV1(; out_name)
+    return ExampleSchemaBV1(; out_name)
 end
-p = NoThrowTransform(ExampleInSchemaV1, ExampleOutSchemaV1, apply_example)
+p = NoThrowTransform(ExampleSchemaAV1, ExampleSchemaBV1, apply_example)
 
 # output
-NoThrowTransform{ExampleInSchemaV1,ExampleOutSchemaV1}: `apply_example`
+NoThrowTransform{ExampleSchemaAV1,ExampleSchemaBV1}: `apply_example`
 ```
 Application of transform:
-```jldoctest test2
-transform!(p, ExampleInSchemaV1(; in_name="greetings"))
+```jldoctest nothrow_ex2
+transform!(p, ExampleSchemaAV1(; in_name="greetings"))
 
 # output
-NoThrowResult{ExampleOutSchemaV1}: Transform succeeded
-  ✅ result: ExampleOutSchemaV1:
+NoThrowResult{ExampleSchemaBV1}: Transform succeeded
+  ✅ result: ExampleSchemaBV1:
  :out_name  "greetings earthling"
 ```
 
 ## Example 2: Failing transformation
 
 Set-up:
-```jldoctest test2
+```jldoctest nothrow_ex2
 force_failure_example(in_record) = NoThrowResult(; violations=["womp", "womp"])
-p = NoThrowTransform(ExampleInSchemaV1, ExampleOutSchemaV1, force_failure_example)
+p = NoThrowTransform(ExampleSchemaAV1, ExampleSchemaBV1, force_failure_example)
 
 # output
-NoThrowTransform{ExampleInSchemaV1,ExampleOutSchemaV1}: `force_failure_example`
+NoThrowTransform{ExampleSchemaAV1,ExampleSchemaBV1}: `force_failure_example`
 ```
 Application of transform:
-```jldoctest test2
-transform!(p, ExampleInSchemaV1(; in_name="greetings"))
+```jldoctest nothrow_ex2
+transform!(p, ExampleSchemaAV1(; in_name="greetings"))
 
 # output
 NoThrowResult{Missing}: Transform failed
