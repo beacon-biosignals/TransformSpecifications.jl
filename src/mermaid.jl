@@ -31,8 +31,9 @@ function _mermaid_subgraph_from_chain_step(step::ChainStep)
     end
     outputs_subgraph = let
         prefix = "_OutputSchema"
-        label = string("Output: ", result_type(output_specification(process)))
-        contents = _schema_subgraph(fieldnames(output_specification(process)), prefix)
+        type = result_type(output_specification(process))
+        label = string("Output: ", type)
+        contents = _schema_subgraph(fieldnames(type), prefix)
         _mermaid_subgraph(node_key * prefix, label; contents, direction="RL")
     end
 
@@ -108,7 +109,8 @@ function mermaidify(chain::NoThrowTransformChain; direction="LR")
     # Add (hidden) links between steps to fix chain order
     keys_upper = map(_mermaid_key, collect(keys(chain)))
     for i_key in 2:length(keys_upper)
-        push!(mermaid_lines, "$(keys_upper[i_key - 1]) ~~~ $(keys_upper[i_key])")
+        arrow = "-.->" #TODO: once fields are linked, replace this with "~~~"
+        push!(mermaid_lines, "$(keys_upper[i_key - 1]) $arrow $(keys_upper[i_key])")
     end
 
     # Create links between the various schema i/o fields

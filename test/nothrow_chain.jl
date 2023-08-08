@@ -145,6 +145,19 @@ end
         @test_throws KeyError _validate_input_assembler(chain,
                                                         input_assembler(d -> d[:invalid_step]["foo"]))
     end
+
+    @testset "`mermaidify" begin
+        ref_test_file = joinpath(pkgdir(TransformSpecifications), "test", "reference_tests", "mermaid_nothrowchain.md")
+        ref_str = read(ref_test_file, String)
+
+        mermaidstr = mermaidify(chain)
+        test_str = ("```mermaid\n$mermaidstr\n```\n")
+
+        @test isequal(ref_str, test_str)
+        # If the test failed because the generated output is intentionally different,
+        # update the reference by doing
+        write(ref_test_file, test_str)
+    end
 end
 
 @testset "Helper utilities" begin

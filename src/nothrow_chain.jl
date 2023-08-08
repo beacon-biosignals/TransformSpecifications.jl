@@ -69,9 +69,7 @@ subgraph STEP_A[Step a]
   end
   subgraph STEP_A_OutputSchema[Output: ExampleOneVarSchemaV1]
     direction RL
-    STEP_A_OutputSchemaresult[result]
-    STEP_A_OutputSchemaviolations[violations]
-    STEP_A_OutputSchemawarnings[warnings]
+    STEP_A_OutputSchemavar[var]
   end
   STEP_A_InputSchema == fn_a ==> STEP_A_OutputSchema
 end
@@ -83,9 +81,7 @@ subgraph STEP_B[Step b]
   end
   subgraph STEP_B_OutputSchema[Output: ExampleOneVarSchemaV1]
     direction RL
-    STEP_B_OutputSchemaresult[result]
-    STEP_B_OutputSchemaviolations[violations]
-    STEP_B_OutputSchemawarnings[warnings]
+    STEP_B_OutputSchemavar[var]
   end
   STEP_B_InputSchema == fn_b ==> STEP_B_OutputSchema
 end
@@ -98,16 +94,14 @@ subgraph STEP_C[Step c]
   end
   subgraph STEP_C_OutputSchema[Output: ExampleOneVarSchemaV1]
     direction RL
-    STEP_C_OutputSchemaresult[result]
-    STEP_C_OutputSchemaviolations[violations]
-    STEP_C_OutputSchemawarnings[warnings]
+    STEP_C_OutputSchemavar[var]
   end
   STEP_C_InputSchema == fn_c ==> STEP_C_OutputSchema
 end
 
 %% Link steps (nodes)
-STEP_A ~~~ STEP_B
-STEP_B ~~~ STEP_C
+STEP_A -.-> STEP_B
+STEP_B -.-> STEP_C
 
 %% Link step i/o fields
 """
@@ -236,13 +230,29 @@ By wrapping this string in a "mermaid" code block in a markdown document,
 it can be rendered graphically. If in GitHub, this will happen automatically;
 if in e.g. Documenter.jl, [additional setup will be required](https://github.com/JuliaDocs/Documenter.jl/issues/1943).
 
-In either case, do
-```julia
-md_mermaid = "```mermaid" * mermaid_str * "```"
-print(md_mermaid)
-will yield
+For markdown, do
+````markdown
 ```mermaid
-$DOCTEST_nothrowchain_ex1_OUTPUT
+{{mermaidify output}}
+```
+````
+and for html (i.e., for Documenter.jl), do
+````markdown
+<div class=\"mermaid\">
+{{mermaidify output}}
+</div>
+````
+This will then be displayed graphically as
+```@raw html
+<svg style="display: block; margin: 0 auto;" width="5em" heigth="5em">
+	<circle cx="2.5em" cy="2.5em" r="2em" stroke="black" stroke-width=".1em" fill="red" />
+</svg>
+```
+
+```@raw html
+<div class="mermaid">
+$(DOCTEST_nothrowchain_ex1_OUTPUT)
+</div>
 ```
 """
 struct NoThrowTransformChain <: AbstractTransformSpecification
