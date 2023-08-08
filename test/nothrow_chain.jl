@@ -103,6 +103,21 @@ end
         @test issetequal(keys(chain.step_input_assemblers), keys(chain.step_transforms))
         @test issetequal(keys(chain._step_output_fields), keys(chain.step_transforms))
         @test length(steps) == length(chain) == 3
+        @test size(chain) == (3,)
+        @test firstindex(chain) == 1
+        @test lastindex(chain) == 3
+        @test Base.IteratorEltype(chain) == eltype(chain) == ChainStep
+        @test isequal(steps, map(i -> get_step(chain, i), 1:length(chain)))
+        @test isequal(steps, map(n -> get_step(chain, n), [s.name for s in steps]))
+
+        @test_throws KeyError get_step(chain, "nonexistent_step")
+        @test_throws BoundsError get_step(chain, 15)
+    end
+
+    @testset "Chain as iterator" begin
+        @test size(chain) == (3,)
+        @test issetequal(keys(chain._step_output_fields), keys(chain.step_transforms))
+        @test length(steps) == length(chain) == 3
         @test isequal(steps, map(i -> get_step(chain, i), 1:length(chain)))
         @test isequal(steps, map(n -> get_step(chain, n), [s.name for s in steps]))
 
