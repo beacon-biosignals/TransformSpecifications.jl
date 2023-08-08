@@ -142,7 +142,8 @@ end
     @testset "`_validate_input_assembler`" begin
         using TransformSpecifications: _validate_input_assembler
         @test isnothing(_validate_input_assembler(chain, nothing))
-        @test_throws KeyError _validate_input_assembler(chain, input_assembler(d -> d[:invalid_step]["foo"]))
+        @test_throws KeyError _validate_input_assembler(chain,
+                                                        input_assembler(d -> d[:invalid_step]["foo"]))
     end
 end
 
