@@ -91,6 +91,54 @@ input construction function must be `nothing`.
 - `_step_output_fields::Dict{String,Dict{Symbol,Any}}`: Internal mapping of upstream step
     outputs to downstream inputs, used to e.g. valdiate that the input to each step
     in a chain can be constructed from the outputs of the upstream steps.
+
+## Example
+
+```jldoctest ex1
+
+using Legolas: @schema, @version
+using TransformSpecifications: input_assembler
+
+@schema "example-in" ExampleOneVarSchema
+@version ExampleOneVarSchemaV1 begin
+    var::String
+end
+
+@schema "example-out" ExampleTwoVarSchema
+@version ExampleTwoVarSchemaV1 begin
+    var1::String
+    var2::String
+end
+
+# Say we have three functions we want to chain together:
+fn_a(x) = ExampleOneVarSchemaV1(; var=x.var * "_a")
+fn_b(x) = ExampleOneVarSchemaV1(; var=x.var * "_b")
+fn_c(x) = ExampleOneVarSchemaV1(; var=x.var1 * x.var2 * "_c")
+
+# First, specify these functions as transforms: what is the specification of the
+# function's input and output?
+step_a_transform = NoThrowTransform(ExampleOneVarSchemaV1, ExampleOneVarSchemaV1, fn_a)
+step_b_transform = NoThrowTransform(ExampleOneVarSchemaV1, ExampleOneVarSchemaV1, fn_b)
+step_c_transform = NoThrowTransform(ExampleTwoVarSchemaV1, ExampleOneVarSchemaV1, fn_c)
+
+# Next, set up the DAG between the upstream outputs into each step's input:
+step_b_assembler = input_assembler(upstream -> (; var=upstream["step_a"][:var]))
+step_c_assembler = input_assembler(upstream -> (; var1=upstream["step_a"][:var],
+                                                var2=upstream["step_b"][:var]))
+# ...note that step_a is skipped, as there are no steps upstream from it.
+
+steps = [ChainStep("step_a", nothing, step_a_transform),
+         ChainStep("step_b", step_b_assembler, step_b_transform),
+         ChainStep("step_c", step_c_assembler, step_c_transform)]
+chain = NoThrowTransformChain(steps)
+
+# output
+NoThrowTransformChain (ExampleOneVarSchemaV1 => ExampleOneVarSchemaV1):
+  🌱  step_a: ExampleOneVarSchemaV1 => ExampleOneVarSchemaV1: `fn_a`
+   ·  step_b: ExampleOneVarSchemaV1 => ExampleOneVarSchemaV1: `fn_b`
+  🌷  step_c: ExampleTwoVarSchemaV1 => ExampleOneVarSchemaV1: `fn_c`
+```
+
 """
 struct NoThrowTransformChain <: AbstractTransformSpecification
     step_transforms::OrderedDict{String,NoThrowTransform}
