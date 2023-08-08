@@ -25,7 +25,8 @@ function _mermaid_subgraph_from_chain_step(step::ChainStep)
 
     inputs_subgraph = let
         prefix = "_InputSchema"
-        contents = _schema_subgraph(keys(construct_field_map(input_specification(process))), prefix)
+        contents = _schema_subgraph(keys(construct_field_map(input_specification(process))),
+                                    prefix)
         label = string("Input: ", input_specification(process))
         _mermaid_subgraph(node_key * prefix, label; contents, direction="RL")
     end
