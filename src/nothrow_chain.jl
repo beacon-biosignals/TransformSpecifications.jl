@@ -164,7 +164,6 @@ transform!(chain, ExampleTwoVarSchemaV1(; var1="wrong", var2="input schema"))
 NoThrowResult{Missing}: Transform failed
   ❌ Input to step `step_a` doesn't conform to specification `ExampleOneVarSchemaV1`. Details: ArgumentError("Invalid value set for field `var`, expected String, got a value of type Missing (missing)")
 ```
-
 """
 struct NoThrowTransformChain <: AbstractTransformSpecification
     step_transforms::OrderedDict{String,NoThrowTransform}
@@ -205,6 +204,19 @@ function Base.push!(chain::NoThrowTransformChain, step::ChainStep)
           step.name => construct_field_map(output_specification(step.transform_spec)))
     return chain
 end
+
+# Base extensions to support iterator interface: https://docs.julialang.org/en/v1/manual/interfaces/#man-interface-iteration
+Base.length(chain::NoThrowTransformChain) = length(chain.step_transforms)
+Base.size(chain::NoThrowTransformChain) = (length(chain),)
+Base.firstindex(::NoThrowTransformChain) = 1
+Base.lastindex(chain::NoThrowTransformChain) = length(chain)
+Base.IteratorEltype(chain::NoThrowTransformChain) = eltype(chain)
+Base.eltype(chain::NoThrowTransformChain) = ChainStep
+function Base.iterate(chain::NoThrowTransformChain, state=1)
+    return state > length(chain) ?  nothing : (get_step(chain, state), state + 1)
+end
+
+Base.keys(chain::NoThrowTransformChain) = collect(keys(chain.step_transforms))
 
 #TODO-Future: consider making a constructor that special-cases when taking in
 # a specification that has a single field (e.g., a Samples object or something)
@@ -249,8 +261,6 @@ end
 _field_map(type::Type{<:NoThrowResult}) = _field_map(result_type(type))
 _field_map(type::Type) = type
 
-Base.length(chain::NoThrowTransformChain) = length(chain.step_transforms)
-
 """
     get_step(chain::NoThrowTransformChain, name::String) -> ChainStep
     get_step(chain::NoThrowTransformChain, step_index::Int) -> ChainStep
@@ -262,7 +272,7 @@ function get_step(chain::NoThrowTransformChain, name::String)
 end
 
 function get_step(chain::NoThrowTransformChain, step_index::Int)
-    return get_step(chain, collect(keys(chain.step_transforms))[step_index])
+    return get_step(chain, keys(chain)[step_index])
 end
 
 """
