@@ -30,25 +30,25 @@ See also: [`nothrow_succeeded`](@ref)
 
 ```jldoctest nothrow_ex1
 using Legolas: @schema, @version
-@schema "example" ExampleSchemaAA
-@version ExampleSchemaAAV1 begin
+@schema "example" ExampleSchemaA
+@version ExampleSchemaAV1 begin
     name::String
 end
 
-NoThrowResult(ExampleSchemaAAV1(; name="yeehaw"))
+NoThrowResult(ExampleSchemaAV1(; name="yeehaw"))
 
 # output
-NoThrowResult{ExampleSchemaAAV1}: Transform succeeded
-  ✅ result: ExampleSchemaAAV1:
+NoThrowResult{ExampleSchemaAV1}: Transform succeeded
+  ✅ result: ExampleSchemaAV1:
  :name  "yeehaw"
 ```
 ```jldoctest nothrow_ex1
-NoThrowResult(ExampleSchemaAAV1(; name="huzzah"); warnings="Hark, watch your step...")
+NoThrowResult(ExampleSchemaAV1(; name="huzzah"); warnings="Hark, watch your step...")
 
 # output
-NoThrowResult{ExampleSchemaAAV1}: Transform succeeded
+NoThrowResult{ExampleSchemaAV1}: Transform succeeded
   ⚠️  Hark, watch your step...
-  ✅ result: ExampleSchemaAAV1:
+  ✅ result: ExampleSchemaAV1:
  :name  "huzzah"
 ```
 ```jldoctest nothrow_ex1
@@ -159,12 +159,12 @@ Set-up:
 ```jldoctest nothrow_ex2
 using Legolas: @schema, @version
 
-@schema "example-in" ExampleSchemaA
+@schema "example-a" ExampleSchemaA
 @version ExampleSchemaAV1 begin
     in_name::String
 end
 
-@schema "example-out" ExampleSchemaB
+@schema "example-b" ExampleSchemaB
 @version ExampleSchemaBV1 begin
     out_name::String
 end

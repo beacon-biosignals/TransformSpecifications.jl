@@ -135,7 +135,7 @@ chain = NoThrowTransformChain(steps)
 NoThrowTransformChain (ExampleOneVarSchemaV1 => ExampleOneVarSchemaV1):
   🌱  step_a: ExampleOneVarSchemaV1 => ExampleOneVarSchemaV1: `fn_a`
    ·  step_b: ExampleOneVarSchemaV1 => ExampleOneVarSchemaV1: `fn_b`
-  🌷  step_c: ExampleOneVarSchemaV1 => ExampleOneVarSchemaV1: `fn_c`
+  🌷  step_c: ExampleTwoVarSchemaV1 => ExampleOneVarSchemaV1: `fn_c`
 ```
 This chain can then be applied to an input, just like a regular `TransformSpecification`
 can:
