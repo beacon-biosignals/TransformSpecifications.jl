@@ -42,7 +42,7 @@ function input_assembler(conversion_fn)
 end
 
 """
-    input_assembler(ts::AbstractTransformSpecification) -> Bool
+    is_input_assembler(ts::AbstractTransformSpecification) -> Bool
 
 Confirm that `ts` is an [`input_assembler`](@ref).
 """
