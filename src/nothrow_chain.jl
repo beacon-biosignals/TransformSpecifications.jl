@@ -91,13 +91,6 @@ input construction function must be `nothing`.
 - `_step_output_fields::Dict{String,Dict{Symbol,Any}}`: Internal mapping of upstream step
     outputs to downstream inputs, used to e.g. valdiate that the input to each step
     in a chain can be constructed from the outputs of the upstream steps.
-
-## Example
-
-```
-
-```
-
 """
 struct NoThrowTransformChain <: AbstractTransformSpecification
     step_transforms::OrderedDict{String,NoThrowTransform}
