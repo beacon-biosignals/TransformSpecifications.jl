@@ -56,54 +56,70 @@ is_input_assembler(::Any) = false
 ##### `NoThrowTransformChain`
 #####
 
-#TODO: make const
-DOCTEST_nothrowchain_ex1_OUTPUT = """
-flowchart LR
+# Saved as a const since we rely on it in two places
+const DOCTEST_OUTPUT_nothrowchain_ex1 = """
+flowchart
 
-%% Add steps (nodes)
+%% Define steps (nodes)
+subgraph OUTERLEVEL["` `"]
+direction LR
 subgraph STEP_A[Step a]
   direction TB
   subgraph STEP_A_InputSchema[Input: ExampleOneVarSchemaV1]
     direction RL
-    STEP_A_InputSchemavar[var]
+    STEP_A_InputSchemavar{{"var::String"}}
+    class STEP_A_InputSchemavar classSpecField
   end
   subgraph STEP_A_OutputSchema[Output: ExampleOneVarSchemaV1]
     direction RL
-    STEP_A_OutputSchemavar[var]
+    STEP_A_OutputSchemavar{{"var::String"}}
+    class STEP_A_OutputSchemavar classSpecField
   end
-  STEP_A_InputSchema == fn_a ==> STEP_A_OutputSchema
+  STEP_A_InputSchema:::classSpec -- fn_a --> STEP_A_OutputSchema:::classSpec
 end
 subgraph STEP_B[Step b]
   direction TB
   subgraph STEP_B_InputSchema[Input: ExampleOneVarSchemaV1]
     direction RL
-    STEP_B_InputSchemavar[var]
+    STEP_B_InputSchemavar{{"var::String"}}
+    class STEP_B_InputSchemavar classSpecField
   end
   subgraph STEP_B_OutputSchema[Output: ExampleOneVarSchemaV1]
     direction RL
-    STEP_B_OutputSchemavar[var]
+    STEP_B_OutputSchemavar{{"var::String"}}
+    class STEP_B_OutputSchemavar classSpecField
   end
-  STEP_B_InputSchema == fn_b ==> STEP_B_OutputSchema
+  STEP_B_InputSchema:::classSpec -- fn_b --> STEP_B_OutputSchema:::classSpec
 end
 subgraph STEP_C[Step c]
   direction TB
   subgraph STEP_C_InputSchema[Input: ExampleTwoVarSchemaV1]
     direction RL
-    STEP_C_InputSchemavar1[var1]
-    STEP_C_InputSchemavar2[var2]
+    STEP_C_InputSchemavar1{{"var1::String"}}
+    class STEP_C_InputSchemavar1 classSpecField
+    STEP_C_InputSchemavar2{{"var2::String"}}
+    class STEP_C_InputSchemavar2 classSpecField
   end
   subgraph STEP_C_OutputSchema[Output: ExampleOneVarSchemaV1]
     direction RL
-    STEP_C_OutputSchemavar[var]
+    STEP_C_OutputSchemavar{{"var::String"}}
+    class STEP_C_OutputSchemavar classSpecField
   end
-  STEP_C_InputSchema == fn_c ==> STEP_C_OutputSchema
+  STEP_C_InputSchema:::classSpec -- fn_c --> STEP_C_OutputSchema:::classSpec
 end
 
-%% Link steps (nodes)
-STEP_A -.-> STEP_B
-STEP_B -.-> STEP_C
+%% Link steps (edges)
+STEP_A:::classStep -..-> STEP_B:::classStep
+STEP_B:::classStep -..-> STEP_C:::classStep
 
-%% Link step i/o fields
+end
+OUTERLEVEL:::classOuter ~~~ OUTERLEVEL:::classOuter
+
+%% Styling definitions
+classDef classOuter fill:#cbd7e2,stroke:#000,stroke-width:0px;
+classDef classStep fill:#eeedff,stroke:#000,stroke-width:2px;
+classDef classSpec fill:#f8f7ff,stroke:#000,stroke-width:1px;
+classDef classSpecField fill:#fff,stroke:#000,stroke-width:1px;
 """
 
 """
@@ -223,7 +239,7 @@ mermaid_str = mermaidify(chain)
 print(mermaid_str)
 
 # output
-$DOCTEST_nothrowchain_ex1_OUTPUT
+$DOCTEST_OUTPUT_nothrowchain_ex1
 ```
 
 By wrapping this string in a "mermaid" code block in a markdown document,
@@ -251,7 +267,7 @@ This will then be displayed graphically as
 
 ```@raw html
 <div class="mermaid">
-$(DOCTEST_nothrowchain_ex1_OUTPUT)
+$(DOCTEST_OUTPUT_nothrowchain_ex1)
 </div>
 ```
 """
@@ -303,7 +319,7 @@ Base.lastindex(chain::NoThrowTransformChain) = length(chain)
 Base.IteratorEltype(chain::NoThrowTransformChain) = eltype(chain)
 Base.eltype(chain::NoThrowTransformChain) = ChainStep
 function Base.iterate(chain::NoThrowTransformChain, state=1)
-    return state > length(chain) ?  nothing : (get_step(chain, state), state + 1)
+    return state > length(chain) ? nothing : (get_step(chain, state), state + 1)
 end
 
 Base.keys(chain::NoThrowTransformChain) = collect(keys(chain.step_transforms))

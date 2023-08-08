@@ -1,7 +1,7 @@
 ```mermaid
 flowchart
 
-%% Add steps (nodes)
+%% Define steps (nodes)
 subgraph OUTERLEVEL["` `"]
 direction LR
 subgraph STEP_A[Step a]
@@ -59,15 +59,12 @@ subgraph STEP_C[Step c]
   STEP_C_InputSchema:::classSpec -- fn_step_c --> STEP_C_OutputSchema:::classSpec
 end
 
-%% Link steps (nodes)
+%% Link steps (edges)
 STEP_A:::classStep -..-> STEP_B:::classStep
 STEP_B:::classStep -..-> STEP_C:::classStep
 
 end
 OUTERLEVEL:::classOuter ~~~ OUTERLEVEL:::classOuter
-
-%% Link step i/o fields
-%% TODO-future
 
 %% Styling definitions
 classDef classOuter fill:#cbd7e2,stroke:#000,stroke-width:0px;

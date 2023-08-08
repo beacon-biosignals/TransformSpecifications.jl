@@ -1,4 +1,4 @@
-# The below is exceptionally experimental and likely to change
+# The below is exceptionally experimental and likely to change!
 
 _ltab_spaces(str; n::Int=2) = repeat(" ", n) * str
 _mermaid_key(key) = uppercase(string(key))
@@ -49,53 +49,6 @@ function _mermaid_subgraph_from_chain_step(step::ChainStep)
                              contents=node_contents, direction="TB")
 end
 
-# #TODO-future: it seems v likely that anything that shows up in this function
-# # will be shared with the validation functions
-# function _mermaid_links_from_chain(chain::LegolasProcessChain)
-
-#     # First, let's make a map between i/o fields
-#     in_fields = Dict()
-#     out_fields = Dict()
-#     for (key, process) in chain.process_steps
-#         in_fields[key] = NamedTuple([f => _field_node_name(f, "_InputSchema", key)
-#                                      for f in fieldnames(input_specification(process))])
-#         out_fields[key] = NamedTuple([f => _field_node_name(f, "_OutputSchema", key)
-#                                       for f in fieldnames(output_specification(process))])
-#     end
-
-#     # Okay, how do we construct each input? Need to map from inputs to outputs
-#     # We don't want to instantiate schemas here (for one thing, we don't have
-#     # good mock data!) so let's make NamedTuples
-#     links = String[]
-#     for key in collect(keys(chain.process_steps))[2:end]
-#         @info key
-
-#         constructor = chain.input_constructors[key]
-#         nt_input = missing
-#         try
-#             nt_input = constructor(out_fields)
-#             @info nt_input
-#         catch e
-#             # @warn e
-#         end
-#         ismissing(nt_input) && continue
-
-#         for k in keys(nt_input)
-#             @info k
-#             a = string(getproperty(nt_input, k))
-#             b = string(in_fields[key][k])
-#             # @info "..." typeof(a) typeof(b)
-
-#             if contains(a, ".") || contains(b, ".")
-#                 @warn "uh oh..." a b
-#                 continue
-#             end
-#             push!(links, "$a --> $b")
-#         end
-#     end
-#     return links
-# end
-
 const DEFAULT_OUTER_STYLE = "fill:#cbd7e2,stroke:#000,stroke-width:0px;"
 const DEFAULT_STEP_STYLE = "fill:#eeedff,stroke:#000,stroke-width:2px;"
 const DEFAULT_SPEC_STYLE = "fill:#f8f7ff,stroke:#000,stroke-width:1px;"
@@ -113,25 +66,20 @@ function mermaidify(chain::NoThrowTransformChain; direction="LR",
                     style_spec_field=DEFAULT_SPEC_FIELD_STYLE)
     mermaid_lines = ["flowchart"]
 
-    push!(mermaid_lines, "", "%% Add steps (nodes)")
+    push!(mermaid_lines, "", "%% Define steps (nodes)")
     push!(mermaid_lines, """subgraph OUTERLEVEL["` `"]""", "direction $direction")
     for step in chain
         Base.append!(mermaid_lines, _mermaid_subgraph_from_chain_step(step))
     end
 
-    push!(mermaid_lines, "", "%% Link steps (nodes)")
-    # Add (hidden) links between steps to fix chain order
+    push!(mermaid_lines, "", "%% Link steps (edges)")
     keys_upper = map(_mermaid_key, collect(keys(chain)))
     for i_key in 2:length(keys_upper)
-        arrow = "-..->" #TODO: once fields are linked, replace this with "~~~"
+        arrow = "-..->"
         push!(mermaid_lines,
               "$(keys_upper[i_key - 1]):::classStep $arrow $(keys_upper[i_key]):::classStep")
     end
     push!(mermaid_lines, "", "end", "OUTERLEVEL:::classOuter ~~~ OUTERLEVEL:::classOuter")
-
-    # Create links between the various schema i/o fields
-    push!(mermaid_lines, "", "%% Link step i/o fields", "%% TODO-future")
-    # Base.append!(mermaid_lines, _mermaid_links_from_chain(chain))
 
     push!(mermaid_lines, "", "%% Styling definitions")
     for (name, style) in
@@ -139,7 +87,6 @@ function mermaidify(chain::NoThrowTransformChain; direction="LR",
          ("classSpecField", style_spec_field)]
         push!(mermaid_lines, "classDef $name $style")
     end
-
     return join(mermaid_lines, "\n")
 end
 

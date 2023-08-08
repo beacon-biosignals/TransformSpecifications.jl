@@ -154,7 +154,7 @@ end
 
         # If the test failed because the generated output is intentionally different,
         # update the reference by doing
-        write(ref_test_file, test_str)
+        # write(ref_test_file, test_str)
     end
 end
 
