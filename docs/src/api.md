@@ -1,5 +1,9 @@
 # API
 
+```@docs
+TransformSpecifications.TransformSpecifications
+```
+
 ## Exported functions and types
 
 ```@index

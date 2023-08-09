@@ -7,14 +7,13 @@ DocMeta.setdocmeta!(TransformSpecifications, :DocTestSetup,
 ## Hack to use mermaid in docs
 # Based on https://github.com/MilesCranmer/SymbolicRegression.jl/blob/098c986167702d3606be12b26bffff31446170ea/docs/make.jl#L53
 
-index_md = read(joinpath(dirname(@__FILE__), "src", "base_index.md"), String)
+index_md = read(joinpath(dirname(@__FILE__), "base_index.md"), String)
 
 # Then, we create our mermaid plot, surrounded by ```mermaid\n...\n``` snippets
 # with ```@raw html\n<div class="mermaid">\n...\n</div>```:
 mermaid_demo = "```@raw html\n<div class=\"mermaid\">\n$(TransformSpecifications.DOCTEST_OUTPUT_nothrowchain_ex1)\n</div>\n```"
 
-index_md = replace(index_md,
-                           "MERMAID_RAW__TO_BE_REPLACED_VIA_MAKE_JL" => mermaid_demo)
+index_md = replace(index_md, "MERMAID_RAW__TO_BE_REPLACED_VIA_MAKE_JL" => mermaid_demo)
 
 # Then, we init mermaid.js:
 init_mermaid = """
