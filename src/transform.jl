@@ -31,13 +31,13 @@ function apply_example(in_record)
     out_name = in_record.in_name * " earthling"
     return ExampleOutSchemaV1(; out_name)
 end
-p = TransformSpecification(ExampleInSchemaV1, ExampleOutSchemaV1, apply_example)
+ts = TransformSpecification(ExampleInSchemaV1, ExampleOutSchemaV1, apply_example)
 
 # output
 TransformSpecification{ExampleInSchemaV1,ExampleOutSchemaV1}: `apply_example`
 ```
 ```jldoctest transform_ex1
-transform!(p, ExampleInSchemaV1(; in_name="greetings"))
+transform!(ts, ExampleInSchemaV1(; in_name="greetings"))
 
 # output
 ExampleOutSchemaV1: (out_name = "greetings earthling",)
@@ -106,7 +106,7 @@ function transform!(ts::TransformSpecification, input)
     return result::OutSpec
 end
 
-function Base.show(io::IO, p::TransformSpecification)
+function Base.show(io::IO, ts::TransformSpecification)
     return print(io,
-                 "TransformSpecification{$(p.input_specification),$(p.output_specification)}: `$(p.transform_fn)`")
+                 "TransformSpecification{$(ts.input_specification),$(ts.output_specification)}: `$(ts.transform_fn)`")
 end

@@ -20,8 +20,8 @@ include("nothrow.jl")
 export NoThrowResult, NoThrowTransform, nothrow_succeeded, is_identity_no_throw_transform,
        transform_unwrapped!, transform_unwrapped
 
-include("nothrow_chain.jl")
-export NoThrowTransformChain, ChainStep, get_step
+include("nothrow_dag.jl")
+export NoThrowDAG, DAGStep, get_step
 
 include("mermaid.jl")
 export mermaidify
@@ -32,10 +32,10 @@ export mermaidify
 
 for pred in (:(==), :(isequal)),
     T in [AbstractTransformSpecification, TransformSpecification, NoThrowResult,
-          NoThrowTransform, NoThrowTransformChain, ChainStep]
+          NoThrowTransform, NoThrowDAG, DAGStep]
 
     @eval function Base.$pred(x::$T, y::$T)
-        return all(p -> $pred(getproperty(x, p), getproperty(y, p)), fieldnames($T))
+        return all(f -> $pred(getproperty(x, f), getproperty(y, f)), fieldnames($T))
     end
 end
 

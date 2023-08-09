@@ -4,8 +4,8 @@ This package enables structured transform elements via defined I/O specification
 - For the abstract interface, see [`AbstractTransformSpecification`](@ref)
 - For a basic concrete transform, see [`TransformSpecification`](@ref)
 - For transforms that catch exceptions and return them as formatted violations, see [`NoThrowTransform`](@ref) (and [`NoThrowResult`](@ref)).
-- For a compound transform that is itself a concrete `AbstractTransformSpecification` and also is constructed from a chain of `AbstractTransformSpecification`s, see [`NoThrowTransformChain`](@ref)
-    - For a plotted graph visualization of such a transform chain, see [Plotting `NoThrowTransformChain`s](@ref).
+- For a compound transform that is itself a concrete `AbstractTransformSpecification` and is constructed from a DAG of `AbstractTransformSpecification`s, see [`NoThrowDAG`](@ref)
+    - For a plotted graph visualization of such a DAG, see [Plotting `NoThrowDAG`s](@ref).
 
 
 ## Table of contents
@@ -36,15 +36,15 @@ Pages = ["nothrow.jl"]
 Private = false
 ```
 
-## `NoThrowTransformChain`
+## `NoThrowDAG`
 ```@autodocs
 Modules = [TransformSpecifications]
-Pages = ["nothrow_chain.jl"]
+Pages = ["nothrow_dag.jl"]
 Private = false
 ```
-Here is the mermaid plot generated for the example chain in [`NoThrowTransformChain`](@ref):
+Here is the mermaid plot generated for the example DAG in [`NoThrowDAG`](@ref):
 
-## Plotting `NoThrowTransformChain`s
+## Plotting `NoThrowDAG`s
 
 MERMAID_RAW__TO_BE_REPLACED_VIA_MAKE_JL
 

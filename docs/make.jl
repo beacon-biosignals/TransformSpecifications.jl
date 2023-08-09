@@ -11,7 +11,7 @@ index_md = read(joinpath(dirname(@__FILE__), "base_index.md"), String)
 
 # Then, we create our mermaid plot, surrounded by ```mermaid\n...\n``` snippets
 # with ```@raw html\n<div class="mermaid">\n...\n</div>```:
-mermaid_demo = "```@raw html\n<div class=\"mermaid\">\n$(TransformSpecifications.DOCTEST_OUTPUT_nothrowchain_ex1)\n</div>\n```"
+mermaid_demo = "```@raw html\n<div class=\"mermaid\">\n$(TransformSpecifications.DOCTEST_OUTPUT_nothrowdag_ex1)\n</div>\n```"
 
 index_md = replace(index_md, "MERMAID_RAW__TO_BE_REPLACED_VIA_MAKE_JL" => mermaid_demo)
 
