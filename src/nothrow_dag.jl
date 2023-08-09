@@ -90,6 +90,12 @@ the overall input to the DAG, its `step.input_assembler` must be `nothing`.
     any recursion or cycles. What will happen if you do? To quote Tom Lehrer,
     "[well, you ask a silly question, you get a silly answer](https://youtu.be/zWPn3esuDgU?t=189)!"
 
+!!! warning "Storage of intermediate values"
+    The output of each step in the DAG is stored locally in memory for the entire lifetime
+    of the `transform` operation, whether or not it is actually accessed by any later
+    steps.  Large intermediate outputs may result in unexpected memory pressure
+    relative to function composition or even local evaluation (since they are not
+    visible to the garbage collector).
 ## Fields
 
 The following fields are constructed automatically when constructing a `NoThrowDAG`
