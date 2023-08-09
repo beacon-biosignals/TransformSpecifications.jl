@@ -299,12 +299,9 @@ end
 Return [`NoThrowResult`](@ref) of sequentially [`transform!`](@ref)ing all
 `dag.step_transforms`, after passing `input` to the first step.
 
-Before each step, that step's input constructor is called on the results of all
+Before each step, that step's `input_assembler` is called on the results of all
 previous processing steps; this constructor generates input that conforms to the
 step's `input_specification`.
-
-The initial step does not call an input constructor; instead, input to the dag
-is forward to it directly.
 """
 function transform!(dag::NoThrowDAG, input)
     warnings = String[]
@@ -349,7 +346,13 @@ end
 function Base.show(io::IO, c::NoThrowDAG)
     str = "NoThrowDAG ($(input_specification(c)) => $(result_type(output_specification(c)))):\n"
     for (i, (k, v)) in enumerate(c.step_transforms)
-        bullet = i == 1 ? "🌱" : (i == length(c.step_transforms) ? "🌷" : " ·") #"☀️ ")
+        bullet = if i == 1
+            "🌱"
+        elseif i == length(c.step_transforms)
+            "🌷"
+        else
+            " ·"
+        end
         str *= "  $bullet  $k: $(input_specification(v)) => $(output_specification(v.transform_spec)): `$(v.transform_spec.transform_fn)`\n"
     end
     return print(io, chomp(str))
