@@ -60,22 +60,22 @@ is_input_assembler(::Any) = false
     NoThrowTransformChain <: AbstractTransformSpecification
     NoThrowTransformChain(steps::AbstractVector{ChainStep})
 
-Processing component that runs a sequence of [`AbstractTransformSpecification`](@ref) steps,
-by calling [`transform!`](@ref) on each step in order. The chain's `input_specification` is that of the
-first element in `step_transforms`; the chain's `output_specification` is that of the last
-element in the `step_transforms`.
+Transform specification constructed from a chain of transform specifications,
+such that [`transform!`](@ref)ing consecutively constructs each step's input from
+upstream outputs and then applies that step's own transformation.
 
-The steps are stored internally as an `OrderedDict{:String,AbstractTransformSpecification}`
-of `<step name> => <step transform>`, along with the instructions (`step_input_assemblers`)
-for constructing the input to each step as a function of all previous ouput component
-results. Each key in `step_transforms` has a corresponding key in `step_input_assemblers`.
-(This input construction approach/type may change in an upcoming release.)
+The chain's `input_specification` is that of the first element in `step_transforms`;
+the chain's `output_specification` is that of the last element in the chain. As the
+first step's input is the input to the chain, its `step.input_assembler`
+must be `nothing`.
 
-To grant downstream access to all fields passed into the first step, the first step should
-be an identity transform, i.e., `is_identity_no_throw_transform(first(steps))` should return true. Additionally,
-as the input to the first step is the input to the chain at large, the chain does not construct
-the first step's input before calling the first step, and therefore the first step'same
-input construction function must be `nothing`.
+!!! tip "Implementation tip"
+    As the input to the chain at is by definition the input to the first step in that chain,
+    only the first step will have access to the input directly passed in by the caller.
+    To grant access to this top-level input to downstream tasks, construct the chain with
+    an initial step that is an identity transform, i.e., `is_identity_no_throw_transform(first(steps))`
+    returns true. Downstream steps can then depend on the output of specific fields from
+    this initial step.
 
 !!! warn
     It is the caller's responsibility to implement a DAG, and to not introduce
