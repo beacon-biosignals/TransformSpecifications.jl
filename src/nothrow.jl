@@ -173,14 +173,14 @@ function apply_example(in_record)
     out_name = in_record.in_name * " earthling"
     return ExampleSchemaBV1(; out_name)
 end
-p = NoThrowTransform(ExampleSchemaAV1, ExampleSchemaBV1, apply_example)
+ntt = NoThrowTransform(ExampleSchemaAV1, ExampleSchemaBV1, apply_example)
 
 # output
 NoThrowTransform{ExampleSchemaAV1,ExampleSchemaBV1}: `apply_example`
 ```
 Application of transform:
 ```jldoctest nothrow_ex2
-transform!(p, ExampleSchemaAV1(; in_name="greetings"))
+transform!(ntt, ExampleSchemaAV1(; in_name="greetings"))
 
 # output
 NoThrowResult{ExampleSchemaBV1}: Transform succeeded
@@ -193,14 +193,14 @@ NoThrowResult{ExampleSchemaBV1}: Transform succeeded
 Set-up:
 ```jldoctest nothrow_ex2
 force_failure_example(in_record) = NoThrowResult(; violations=["womp", "womp"])
-p = NoThrowTransform(ExampleSchemaAV1, ExampleSchemaBV1, force_failure_example)
+ntt = NoThrowTransform(ExampleSchemaAV1, ExampleSchemaBV1, force_failure_example)
 
 # output
 NoThrowTransform{ExampleSchemaAV1,ExampleSchemaBV1}: `force_failure_example`
 ```
 Application of transform:
 ```jldoctest nothrow_ex2
-transform!(p, ExampleSchemaAV1(; in_name="greetings"))
+transform!(ntt, ExampleSchemaAV1(; in_name="greetings"))
 
 # output
 NoThrowResult{Missing}: Transform failed
@@ -287,9 +287,9 @@ function transform!(ntt::NoThrowTransform, input)
     return NoThrowResult(; warnings=ntt_result.warnings, violations)::NoThrowResult{Missing}
 end
 
-function Base.show(io::IO, p::NoThrowTransform)
+function Base.show(io::IO, ntt::NoThrowTransform)
     return print(io,
-                 "NoThrowTransform{$(input_specification(p)),$(result_type(output_specification(p)))}: `$(p.transform_spec.transform_fn)`")
+                 "NoThrowTransform{$(input_specification(ntt)),$(result_type(output_specification(ntt)))}: `$(ntt.transform_spec.transform_fn)`")
 end
 
 """

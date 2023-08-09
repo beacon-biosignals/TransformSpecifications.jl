@@ -32,7 +32,7 @@ for pred in (:(==), :(isequal)),
           NoThrowTransform, NoThrowTransformChain, ChainStep]
 
     @eval function Base.$pred(x::$T, y::$T)
-        return all(p -> $pred(getproperty(x, p), getproperty(y, p)), fieldnames($T))
+        return all(f -> $pred(getproperty(x, f), getproperty(y, f)), fieldnames($T))
     end
 end
 
