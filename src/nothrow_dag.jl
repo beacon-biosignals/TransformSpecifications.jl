@@ -35,7 +35,7 @@ that type's input specification.
 * takes as input a Dictionary with keys that are the names of upstream steps, where
     the value of each of these keys is the output of that upstream_step, as
     specified by `output_specification(upstream_step)`.
-* returns a `NamedTuple` that can be converted, via [convert_spec`](@ref), to the
+* returns a `NamedTuple` that can be converted, via [`convert_spec`](@ref), to the
     specification of an `AbstractTransformSpecification` that it is paired with
     in a [`DAGStep`](@ref).
 
@@ -358,8 +358,8 @@ field_dict(type::Type{<:NoThrowResult}) = field_dict(result_type(type))
 
 function field_dict(type)
     return Dict(map(fieldnames(type), fieldtypes(type)) do fname, ftype
-        return fname => field_dict_value(ftype)
-    end)
+                    return fname => field_dict_value(ftype)
+                end)
 end
 
 field_dict_value(type::Type{<:NoThrowResult}) = field_dict_value(result_type(type))
