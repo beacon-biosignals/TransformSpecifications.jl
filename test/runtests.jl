@@ -12,4 +12,12 @@ include("set_up_tests.jl")
     @testset "NoThrow" begin
         include("nothrow.jl")
     end
+
+    @testset "`NoThrowDAG`" begin
+        include("nothrow_dag.jl")
+    end
+
+    @testset "Doctests" begin
+        doctest(TransformSpecifications)
+    end
 end

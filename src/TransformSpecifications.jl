@@ -20,16 +20,19 @@ include("nothrow.jl")
 export NoThrowResult, NoThrowTransform, nothrow_succeeded, is_identity_no_throw_transform,
        transform_unwrapped!, transform_unwrapped
 
+include("nothrow_dag.jl")
+export NoThrowDAG, DAGStep, get_step
+
 #####
 ##### Base extensions
 #####
 
 for pred in (:(==), :(isequal)),
     T in [AbstractTransformSpecification, TransformSpecification, NoThrowResult,
-          NoThrowTransform]
+          NoThrowTransform, NoThrowDAG, DAGStep]
 
     @eval function Base.$pred(x::$T, y::$T)
-        return all(p -> $pred(getproperty(x, p), getproperty(y, p)), fieldnames($T))
+        return all(f -> $pred(getproperty(x, f), getproperty(y, f)), fieldnames($T))
     end
 end
 

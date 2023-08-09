@@ -64,11 +64,11 @@ end
     end
 end
 
-@testset "`interpret_input`" begin
-    using TransformSpecifications: interpret_input
+@testset "`convert_spec`" begin
+    using TransformSpecifications: convert_spec
     for (type, input, output) in [(Int, 3, 3), (Int, 3.0, 3),
                                   (SchemaCV1, SchemaAV1(; foo="whee"), SchemaCV1(; foo="whee"))]
-        x = interpret_input(type, input)
+        x = convert_spec(type, input)
         @test x isa type
         @test isequal(x, output)
     end
@@ -76,17 +76,17 @@ end
     let
         input = SchemaAV1(; foo="yay")
         push!(input.list, 21)
-        @test interpret_input(SchemaAV1, input) === input
+        @test convert_spec(SchemaAV1, input) === input
     end
 
     let
         input = [3, 4, 5]
-        @test interpret_input(Vector{Int}, input) === input
+        @test convert_spec(Vector{Int}, input) === input
     end
 
-    @test_throws InexactError interpret_input(Int, 2.4)
-    @test_throws ArgumentError interpret_input(SchemaAV1, SchemaBV1(; name="rad"))
-    @test_throws ArgumentError interpret_input(SchemaAV1, SchemaBV1(; name="rad"))
+    @test_throws InexactError convert_spec(Int, 2.4)
+    @test_throws ArgumentError convert_spec(SchemaAV1, SchemaBV1(; name="rad"))
+    @test_throws ArgumentError convert_spec(SchemaAV1, SchemaBV1(; name="rad"))
 end
 
 @testset "`transform` vs `transform!`" begin

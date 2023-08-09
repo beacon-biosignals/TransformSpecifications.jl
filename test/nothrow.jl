@@ -144,9 +144,15 @@ end
 
 @testset "`NoThrowTransform`" begin
     @testset "Conforming input succeeds" begin
-        ntt = NoThrowTransform(SchemaAV1, SchemaBV1, _ -> SchemaBV1(; name="yay"))
+        transform_fn = _ -> SchemaBV1(; name="yay")
+        ntt = NoThrowTransform(SchemaAV1, SchemaBV1, transform_fn)
         @test input_specification(ntt) == SchemaAV1
         @test output_specification(ntt) == NoThrowResult{SchemaBV1}
+
+        ntt_kwargs = NoThrowTransform(; input_specification=SchemaAV1,
+                                      output_specification=SchemaBV1,
+                                      transform_fn)
+        @test ntt == ntt_kwargs
 
         input_record = SchemaAV1(; foo="rabbit")
         result = transform!(ntt, input_record)
@@ -282,6 +288,7 @@ end
     end
 
     @testset "Identity `NoThrowTransform`" begin
+        using TransformSpecifications: identity_no_throw_result
         test_transform_fn(_) = NoThrowResult(SchemaBV1(; name="yay"))
         ntt_a = NoThrowTransform(SchemaAV1, SchemaBV1, test_transform_fn)
         @test !is_identity_no_throw_transform(ntt_a)
@@ -296,9 +303,11 @@ end
         ntt_c = NoThrowTransform(SchemaAV1)
         @test is_identity_no_throw_transform(ntt_c)
 
-        ntt_d = NoThrowTransform(SchemaAV1, SchemaAV1,
-                                 TransformSpecifications.identity_no_throw_result)
+        ntt_d = NoThrowTransform(SchemaAV1, SchemaAV1, identity_no_throw_result)
         @test is_identity_no_throw_transform(ntt_d)
         @test isequal(ntt_c, ntt_d)
+
+        @test isequal(NoThrowResult(SchemaAV1(; foo="yes")),
+                      transform!(NoThrowTransform(SchemaAV1), SchemaAV1(; foo="yes")))
     end
 end
