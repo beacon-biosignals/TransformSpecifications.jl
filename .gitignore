@@ -15,3 +15,6 @@ format/Manifest.toml
 dev/
 
 Manifest.toml
+
+# Build automatically when docs build
+docs/src/index.md

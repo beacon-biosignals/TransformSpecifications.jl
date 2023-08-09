@@ -1,9 +1,3 @@
-```@raw html
-<!-- Support mermaid, ref https://github.com/JuliaDocs/Documenter.jl/issues/1943-->
-<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
-<script>mermaid.initialize({startOnLoad:true});</script>
-```
-
 # TransformSpecifications.jl
 
 ```@docs
@@ -13,7 +7,7 @@ TransformSpecifications.TransformSpecifications
 ## Table of contents
 
 ```@contents
-Pages = ["index.md", "visualization.md", "api.md"]
+Pages = ["index.md", "api.md"]
 Depth = 3
 ```
 
@@ -43,3 +37,15 @@ Modules = [TransformSpecifications]
 Pages = ["nothrow_chain.jl"]
 Private = false
 ```
+
+## Mermaid
+
+```@autodocs
+Modules = [TransformSpecifications]
+Pages = ["mermaid.jl"]
+Private = false
+```
+
+Here is the mermaid plot generated for the example chain in [`NoThrowTransformChain`](@ref):
+
+MERMAID_RAW__TO_BE_REPLACED_VIA_MAKE_JL
