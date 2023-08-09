@@ -6,7 +6,7 @@
     DAGStep
 
 Helper struct, used to construct [`NoThrowDAG`](@ref)s. Requires fields
-* `name::String`: Name of step, must be unique across a constructed chain
+* `name::String`: Name of step, must be unique across a constructed DAG
 * `transform_spec::AbstractTransformSpecification`: Transform applied by step
 * `input_assembler::UpstreamOutputsTransform`: Transform that takes in a Dictionary with keys that are the
     names of upstream steps; the value of each of these keys is the output of that
@@ -34,7 +34,7 @@ end
     input_assembler(conversion_fn) -> TransformSpecification{Dict{String,Any}, NamedTuple}
 
 Special transform used to convert the outputs of upstream steps in a
-[`NoThrowDAG`](@ref) chain into a `NamedTuple` that can be converted into
+[`NoThrowDAG`](@ref) into a `NamedTuple` that can be converted into
 that type's input specification.
 """
 function input_assembler(conversion_fn)
@@ -60,29 +60,33 @@ is_input_assembler(::Any) = false
     NoThrowDAG <: AbstractTransformSpecification
     NoThrowDAG(steps::AbstractVector{DAGStep})
 
-Transform specification constructed from a chain of transform specifications,
-such that [`transform!`](@ref)ing consecutively constructs each step's input from
-upstream outputs and then applies that step's own transformation.
+Transform specification constructed from a DAG of transform specification nodes (`steps`),
+such that calling [`transform!`](@ref) on the DAG iterates through the steps,
+first constructing that step's input from all preceding upstream step outputs and
+then appling that step's own transform to the constructed input.
 
-The chain's `input_specification` is that of the first element in `step_transforms`;
-the chain's `output_specification` is that of the last element in the chain. As the
-first step's input is the input to the chain, its `step.input_assembler`
-must be `nothing`.
+The DAG's `input_specification` is that of the first step in the DAG; its `output_specification`
+is that of the last step. As the first step's input is by definition the same as
+the overall input to the DAG, its `step.input_assembler` must be `nothing`.
 
-!!! tip "Implementation tip"
-    As the input to the chain at is by definition the input to the first step in that chain,
+!!! tip "DAG construction tip"
+    As the input to the DAG at is by definition the input to the first step in that DAG,
     only the first step will have access to the input directly passed in by the caller.
-    To grant access to this top-level input to downstream tasks, construct the chain with
+    To grant access to this top-level input to downstream tasks, construct the DAG with
     an initial step that is an identity transform, i.e., `is_identity_no_throw_transform(first(steps))`
     returns true. Downstream steps can then depend on the output of specific fields from
-    this initial step.
+    this initial step. The single argument [`TransformSpecification`](@ref) constructor
+    creates such an identity transform.
 
-!!! warn
+!!! warn "DAG construction warning"
     It is the caller's responsibility to implement a DAG, and to not introduce
     any recursion or cycles. What will happen if you do? To quote Tom Lehrer,
     "[well, you ask a silly question, you get a silly answer](https://youtu.be/zWPn3esuDgU?t=189)!"
 
 ## Fields
+
+The following fields are constructed automatically when constructing a `NoThrowDAG`
+from a vector of `DAGSteps`:
 
 - `step_transforms::OrderedDict{String,AbstractTransformSpecification}`: Ordered dictionary of processing steps
 - `step_input_assemblers::Dict{String,TransformSpecification}`: Dictionary with functions for constructing the input
@@ -90,11 +94,11 @@ must be `nothing`.
     of all upstream `step_transforms` results.
 - `_step_output_fields::Dict{String,Dict{Symbol,Any}}`: Internal mapping of upstream step
     outputs to downstream inputs, used to e.g. valdiate that the input to each step
-    in a chain can be constructed from the outputs of the upstream steps.
+    can be constructed from the outputs of the upstream steps.
 
 ## Example
 
-```jldoctest nothrowchain_ex1
+```jldoctest nothrowdag_ex1
 using Legolas: @schema, @version
 using TransformSpecifications: input_assembler
 
@@ -129,7 +133,7 @@ step_c_assembler = input_assembler(upstream -> (; var1=upstream["step_a"][:var],
 steps = [DAGStep("step_a", nothing, step_a_transform),
          DAGStep("step_b", step_b_assembler, step_b_transform),
          DAGStep("step_c", step_c_assembler, step_c_transform)]
-chain = NoThrowDAG(steps)
+dag = NoThrowDAG(steps)
 
 # output
 NoThrowDAG (ExampleOneVarSchemaV1 => ExampleOneVarSchemaV1):
@@ -137,11 +141,11 @@ NoThrowDAG (ExampleOneVarSchemaV1 => ExampleOneVarSchemaV1):
    ·  step_b: ExampleOneVarSchemaV1 => ExampleOneVarSchemaV1: `fn_b`
   🌷  step_c: ExampleTwoVarSchemaV1 => ExampleOneVarSchemaV1: `fn_c`
 ```
-This chain can then be applied to an input, just like a regular `TransformSpecification`
+This DAG can then be applied to an input, just like a regular `TransformSpecification`
 can:
-```jldoctest nothrowchain_ex1
+```jldoctest nothrowdag_ex1
 input = ExampleOneVarSchemaV1(; var="initial_str")
-transform!(chain, input)
+transform!(dag, input)
 
 # output
 NoThrowResult{ExampleOneVarSchemaV1}: Transform succeeded
@@ -150,15 +154,15 @@ NoThrowResult{ExampleOneVarSchemaV1}: Transform succeeded
 ```
 Similarly, this transform will fail if the input specification is violated---but
 because it returns a [`NoThrowResult`](@ref), it will fail gracefully:
-```jldoctest nothrowchain_ex1
+```jldoctest nothrowdag_ex1
 # What is the input specification?
-input_specification(chain)
+input_specification(dag)
 
 # output
 ExampleOneVarSchemaV1
 ```
-```jldoctest nothrowchain_ex1
-transform!(chain, ExampleTwoVarSchemaV1(; var1="wrong", var2="input schema"))
+```jldoctest nothrowdag_ex1
+transform!(dag, ExampleTwoVarSchemaV1(; var1="wrong", var2="input schema"))
 
 # output
 NoThrowResult{Missing}: Transform failed
@@ -184,43 +188,43 @@ end
 
 function NoThrowDAG(steps::AbstractVector{<:DAGStep})
     length(steps) == 0 &&
-        throw(ArgumentError("At least one step required to construct a chain"))
-    chain = NoThrowDAG(first(steps))
+        throw(ArgumentError("At least one step required to construct a DAG"))
+    dag = NoThrowDAG(first(steps))
     for step in steps[2:end]
-        push!(chain, step)
+        push!(dag, step)
     end
-    return chain
+    return dag
 end
 
-function Base.push!(chain::NoThrowDAG, step::DAGStep)
+function Base.push!(dag::NoThrowDAG, step::DAGStep)
     # Safety first!
-    haskey(chain.step_transforms, step.name) &&
-        throw(ArgumentError("Key `$(step.name)` already exists in chain!"))
-    _validate_input_assembler(chain, step.input_assembler)
+    haskey(dag.step_transforms, step.name) &&
+        throw(ArgumentError("Key `$(step.name)` already exists in dag!"))
+    _validate_input_assembler(dag, step.input_assembler)
 
     # Forge it!
-    push!(chain.step_transforms, step.name => NoThrowTransform(step.transform_spec))
-    push!(chain.step_input_assemblers, step.name => step.input_assembler)
-    push!(chain._step_output_fields,
+    push!(dag.step_transforms, step.name => NoThrowTransform(step.transform_spec))
+    push!(dag.step_input_assemblers, step.name => step.input_assembler)
+    push!(dag._step_output_fields,
           step.name => construct_field_map(output_specification(step.transform_spec)))
-    return chain
+    return dag
 end
 
 #TODO-Future: consider making a constructor that special-cases when taking in
 # a specification that has a single field (e.g., a Samples object or something)
 # instead of doing this version that is geared at named tuple creation
 """
-    _validate_input_assembler(chain::NoThrowDAG, input_assembler::TransformSpecification)
-    _validate_input_assembler(chain::NoThrowDAG, ::Nothing)
+    _validate_input_assembler(dag::NoThrowDAG, input_assembler::TransformSpecification)
+    _validate_input_assembler(dag::NoThrowDAG, ::Nothing)
 
 Confirm that an input_assembler, when called on all upstream outputs generated by
-`chain`, has access to all fields it needs to construct its input.
+`dag`, has access to all fields it needs to construct its input.
 """
 _validate_input_assembler(::NoThrowDAG, ::Nothing) = nothing
 
-function _validate_input_assembler(chain::NoThrowDAG,
+function _validate_input_assembler(dag::NoThrowDAG,
                                    input_assembler::TransformSpecification)
-    transform(input_assembler, chain._step_output_fields) # Will throw if any field doesn't exist
+    transform(input_assembler, dag._step_output_fields) # Will throw if any field doesn't exist
     return nothing
 end
 
@@ -249,39 +253,39 @@ end
 _field_map(type::Type{<:NoThrowResult}) = _field_map(result_type(type))
 _field_map(type::Type) = type
 
-Base.length(chain::NoThrowDAG) = length(chain.step_transforms)
+Base.length(dag::NoThrowDAG) = length(dag.step_transforms)
 
 """
-    get_step(chain::NoThrowDAG, name::String) -> DAGStep
-    get_step(chain::NoThrowDAG, step_index::Int) -> DAGStep
+    get_step(dag::NoThrowDAG, name::String) -> DAGStep
+    get_step(dag::NoThrowDAG, step_index::Int) -> DAGStep
 
 Return `DAGStep` with `name` or `step_index`.
 """
-function get_step(chain::NoThrowDAG, name::String)
-    return DAGStep(name, chain.step_input_assemblers[name], chain.step_transforms[name])
+function get_step(dag::NoThrowDAG, name::String)
+    return DAGStep(name, dag.step_input_assemblers[name], dag.step_transforms[name])
 end
 
-function get_step(chain::NoThrowDAG, step_index::Int)
-    return get_step(chain, collect(keys(chain.step_transforms))[step_index])
+function get_step(dag::NoThrowDAG, step_index::Int)
+    return get_step(dag, collect(keys(dag.step_transforms))[step_index])
 end
 
 """
-    input_specification(chain::NoThrowDAG)
+    input_specification(dag::NoThrowDAG)
 
-Return `input_specification` of first step in `chain`, which is the input specification
-of the entire chain.
+Return `input_specification` of first step in `dag`, which is the input specification
+of the entire DAG.
 
 See also: [`output_specification`](@ref), [`NoThrowDAG`](@ref)
 """
-function input_specification(chain::NoThrowDAG)
-    return input_specification(first(chain.step_transforms)[2])
+function input_specification(dag::NoThrowDAG)
+    return input_specification(first(dag.step_transforms)[2])
 end
 
 """
-    output_specification(chain::NoThrowDAG) -> Type{<:Legolas.AbstractRecord}
+    output_specification(dag::NoThrowDAG) -> Type{<:Legolas.AbstractRecord}
 
-Return output_specification of last step in `chain`, which is the output specification
-of the entire chain.
+Return output_specification of last step in `dag`, which is the output specification
+of the entire DAG.
 
 See also: [`input_specification`](@ref), [`NoThrowDAG`](@ref)
 """
@@ -290,22 +294,22 @@ function output_specification(c::NoThrowDAG)
 end
 
 """
-    transform!(chain::NoThrowDAG, input)
+    transform!(dag::NoThrowDAG, input)
 
 Return [`NoThrowResult`](@ref) of sequentially [`transform!`](@ref)ing all
-`chain.step_transforms`, after passing `input` to the first step.
+`dag.step_transforms`, after passing `input` to the first step.
 
 Before each step, that step's input constructor is called on the results of all
 previous processing steps; this constructor generates input that conforms to the
 step's `input_specification`.
 
-The initial step does not call an input constructor; instead, input to the chain
+The initial step does not call an input constructor; instead, input to the dag
 is forward to it directly.
 """
-function transform!(chain::NoThrowDAG, input)
+function transform!(dag::NoThrowDAG, input)
     warnings = String[]
     component_results = OrderedDict{String,Any}()
-    for (i_step, (name, step)) in enumerate(chain.step_transforms)
+    for (i_step, (name, step)) in enumerate(dag.step_transforms)
         @debug "Applying step `$name`..."
         InSpec = input_specification(step)
         input = if i_step == 1
@@ -313,7 +317,7 @@ function transform!(chain::NoThrowDAG, input)
             # exists---but it still needs to be validated
             input
         else
-            nt_result = transform!(NoThrowTransform(chain.step_input_assemblers[name]),
+            nt_result = transform!(NoThrowTransform(dag.step_input_assemblers[name]),
                                    component_results)
             nothrow_succeeded(nt_result) || return nt_result
             append!(warnings, nt_result.warnings)

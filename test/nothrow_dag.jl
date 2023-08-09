@@ -26,24 +26,23 @@ end
                      TransformSpecification(SchemaFooV1, SchemaFooV1, identity))
     step_b = DAGStep("init", nothing,
                      NoThrowTransform(SchemaFooV1, SchemaFooV1, identity))
-    chain_a = NoThrowDAG(step_a)
-    chain_b = NoThrowDAG(step_b)
-    chain_c = NoThrowDAG([step_a])
+    dag_a = NoThrowDAG(step_a)
+    dag_b = NoThrowDAG(step_b)
+    dag_c = NoThrowDAG([step_a])
 
-    @test isequal(chain_a, chain_b)
-    @test isequal(chain_a, chain_c)
-    @test chain_a == chain_b == chain_c
+    @test isequal(dag_a, dag_b)
+    @test isequal(dag_a, dag_c)
+    @test dag_a == dag_b == dag_c
 end
 
 @testset "Construction errors" begin
     using TransformSpecifications: input_assembler
 
-    @test_throws ArgumentError("At least one step required to construct a chain") NoThrowDAG(DAGStep[])
+    @test_throws ArgumentError("At least one step required to construct a DAG") NoThrowDAG(DAGStep[])
 
     @testset "First step constructor must be `nothing`" begin
         ntt = NoThrowTransform(SchemaBarV1)
-        @test NoThrowDAG([DAGStep("a", nothing, ntt)]) isa
-              NoThrowDAG
+        @test NoThrowDAG([DAGStep("a", nothing, ntt)]) isa NoThrowDAG
         err = ArgumentError("Initial step's input constructor must be `nothing` (TransformSpecification{Dict{String, Any},NamedTuple}: `identity`)")
         @test_throws err NoThrowDAG([DAGStep("a", input_assembler(identity),
                                              ntt)])
@@ -57,7 +56,7 @@ end
 
     @testset "Invalid step combinations" begin
         ts = TransformSpecification(SchemaFooV1, SchemaFooV1, identity)
-        err = ArgumentError("Key `foo` already exists in chain!")
+        err = ArgumentError("Key `foo` already exists in DAG!")
         @test_throws err NoThrowDAG([DAGStep("foo", nothing, ts),
                                      DAGStep("foo", nothing, ts)])
 
@@ -97,41 +96,41 @@ end
                                       x -> SchemaFooV1(;
                                                        foo=string(x.var1, "_WOW_",
                                                                   x.var2))))]
-    chain = NoThrowDAG(steps)
-    @test chain isa NoThrowDAG
+    dag = NoThrowDAG(steps)
+    @test dag isa NoThrowDAG
 
     @testset "Internals" begin
-        @test issetequal(keys(chain.step_input_assemblers), keys(chain.step_transforms))
-        @test issetequal(keys(chain._step_output_fields), keys(chain.step_transforms))
-        @test length(steps) == length(chain) == 3
-        @test isequal(steps, map(i -> get_step(chain, i), 1:length(chain)))
-        @test isequal(steps, map(n -> get_step(chain, n), [s.name for s in steps]))
+        @test issetequal(keys(dag.step_input_assemblers), keys(dag.step_transforms))
+        @test issetequal(keys(dag._step_output_fields), keys(dag.step_transforms))
+        @test length(steps) == length(dag) == 3
+        @test isequal(steps, map(i -> get_step(dag, i), 1:length(dag)))
+        @test isequal(steps, map(n -> get_step(dag, n), [s.name for s in steps]))
 
-        @test_throws KeyError get_step(chain, "nonexistent_step")
-        @test_throws BoundsError get_step(chain, 15)
+        @test_throws KeyError get_step(dag, "nonexistent_step")
+        @test_throws BoundsError get_step(dag, 15)
     end
 
     @testset "Externals" begin
-        @test chain isa AbstractTransformSpecification
-        @test input_specification(chain) == SchemaFooV1
-        @test output_specification(chain) == NoThrowResult{SchemaFooV1}
+        @test dag isa AbstractTransformSpecification
+        @test input_specification(dag) == SchemaFooV1
+        @test output_specification(dag) == NoThrowResult{SchemaFooV1}
     end
 
     @testset "Conforming input succeeds" begin
         input_record = SchemaFooV1(; foo="rabbit")
-        chain_output = transform!(chain, input_record)
-        @test nothrow_succeeded(chain_output)
-        @test chain_output isa NoThrowResult{SchemaFooV1}
-        @test chain_output.result.foo == "rabbit_a2_WOW_rabbit_a_b"
+        dag_output = transform!(dag, input_record)
+        @test nothrow_succeeded(dag_output)
+        @test dag_output isa NoThrowResult{SchemaFooV1}
+        @test dag_output.result.foo == "rabbit_a2_WOW_rabbit_a_b"
 
         conforming_input_record = SchemaFooChildV1(; foo="rabbit")
-        @test !(conforming_input_record isa input_specification(chain))
-        chain_output2 = transform!(chain, conforming_input_record)
-        @test isequal(chain_output, chain_output2)
+        @test !(conforming_input_record isa input_specification(dag))
+        dag_output2 = transform!(dag, conforming_input_record)
+        @test isequal(dag_output, dag_output2)
     end
 
     @testset "Nonconforming input fails" begin
-        result = transform!(chain, SchemaBarV1(; var1="yay", var2="whee"))
+        result = transform!(dag, SchemaBarV1(; var1="yay", var2="whee"))
         @test !nothrow_succeeded(result)
         err_str = "Input to step `init` doesn't conform to specification `SchemaFooV1`. \
                    Details: ArgumentError(\"Invalid value set for field `foo`, expected String, \
@@ -141,8 +140,8 @@ end
 
     @testset "`_validate_input_assembler`" begin
         using TransformSpecifications: _validate_input_assembler
-        @test isnothing(_validate_input_assembler(chain, nothing))
-        @test_throws KeyError _validate_input_assembler(chain,
+        @test isnothing(_validate_input_assembler(dag, nothing))
+        @test_throws KeyError _validate_input_assembler(dag,
                                                         input_assembler(d -> d[:invalid_step]["foo"]))
     end
 end
