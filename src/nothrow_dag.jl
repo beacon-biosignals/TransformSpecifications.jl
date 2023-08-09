@@ -263,8 +263,8 @@ field_dict(type::Type{<:NoThrowResult}) = field_dict(result_type(type))
 
 function field_dict(type)
     return Dict(map(fieldnames(type), fieldtypes(type)) do fname, ftype
-        return fname => field_dict_value(ftype)
-    end)
+                    return fname => field_dict_value(ftype)
+                end)
 end
 
 field_dict_value(type::Type{<:NoThrowResult}) = field_dict_value(result_type(type))
