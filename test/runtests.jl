@@ -17,7 +17,7 @@ include("set_up_tests.jl")
         include("nothrow.jl")
     end
 
-    @testset "`NoThrowTransformChain`" begin
+    @testset "`NoThrowDAG`" begin
         include("nothrow_chain.jl")
     end
 end

@@ -21,7 +21,7 @@ export NoThrowResult, NoThrowTransform, nothrow_succeeded, is_identity_no_throw_
        transform_unwrapped!, transform_unwrapped
 
 include("nothrow_chain.jl")
-export NoThrowTransformChain, ChainStep, get_step
+export NoThrowDAG, ChainStep, get_step
 
 #####
 ##### Base extensions
@@ -29,7 +29,7 @@ export NoThrowTransformChain, ChainStep, get_step
 
 for pred in (:(==), :(isequal)),
     T in [AbstractTransformSpecification, TransformSpecification, NoThrowResult,
-          NoThrowTransform, NoThrowTransformChain, ChainStep]
+          NoThrowTransform, NoThrowDAG, ChainStep]
 
     @eval function Base.$pred(x::$T, y::$T)
         return all(f -> $pred(getproperty(x, f), getproperty(y, f)), fieldnames($T))

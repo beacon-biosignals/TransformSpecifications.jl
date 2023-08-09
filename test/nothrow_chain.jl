@@ -26,9 +26,9 @@ end
                        TransformSpecification(SchemaFooV1, SchemaFooV1, identity))
     step_b = ChainStep("init", nothing,
                        NoThrowTransform(SchemaFooV1, SchemaFooV1, identity))
-    chain_a = NoThrowTransformChain(step_a)
-    chain_b = NoThrowTransformChain(step_b)
-    chain_c = NoThrowTransformChain([step_a])
+    chain_a = NoThrowDAG(step_a)
+    chain_b = NoThrowDAG(step_b)
+    chain_c = NoThrowDAG([step_a])
 
     @test isequal(chain_a, chain_b)
     @test isequal(chain_a, chain_c)
@@ -38,36 +38,36 @@ end
 @testset "Construction errors" begin
     using TransformSpecifications: input_assembler
 
-    @test_throws ArgumentError("At least one step required to construct a chain") NoThrowTransformChain(ChainStep[])
+    @test_throws ArgumentError("At least one step required to construct a chain") NoThrowDAG(ChainStep[])
 
     @testset "First step constructor must be `nothing`" begin
         ntt = NoThrowTransform(SchemaBarV1)
-        @test NoThrowTransformChain([ChainStep("a", nothing, ntt)]) isa
-              NoThrowTransformChain
+        @test NoThrowDAG([ChainStep("a", nothing, ntt)]) isa
+              NoThrowDAG
         err = ArgumentError("Initial step's input constructor must be `nothing` (TransformSpecification{Dict{String, Any},NamedTuple}: `identity`)")
-        @test_throws err NoThrowTransformChain([ChainStep("a", input_assembler(identity),
+        @test_throws err NoThrowDAG([ChainStep("a", input_assembler(identity),
                                                           ntt)])
     end
 
     @testset "Invalid input assembler" begin
         ts = TransformSpecification(SchemaFooV1, SchemaFooV1, identity)
         err = ArgumentError("Invalid `input_assembler`")
-        @test_throws err NoThrowTransformChain([ChainStep("foo", identity, ts)])
+        @test_throws err NoThrowDAG([ChainStep("foo", identity, ts)])
     end
 
     @testset "Invalid step combinations" begin
         ts = TransformSpecification(SchemaFooV1, SchemaFooV1, identity)
         err = ArgumentError("Key `foo` already exists in chain!")
-        @test_throws err NoThrowTransformChain([ChainStep("foo", nothing, ts),
+        @test_throws err NoThrowDAG([ChainStep("foo", nothing, ts),
                                                 ChainStep("foo", nothing, ts)])
 
         ch = [ChainStep("step1", nothing, ts),
               ChainStep("step2", input_assembler(d -> (; foo=d["x"])), ts)]
-        @test_throws KeyError("x") NoThrowTransformChain(ch)
+        @test_throws KeyError("x") NoThrowDAG(ch)
 
         ch = [ChainStep("step1", nothing, ts),
               ChainStep("step2", input_assembler(d -> (; foo=d["step1"][:x])), ts)]
-        @test_throws KeyError(:x) NoThrowTransformChain(ch)
+        @test_throws KeyError(:x) NoThrowDAG(ch)
 
         # Can't wrap a broken test_throws BUT this should throw in the future,
         # when additional validation added!
@@ -75,11 +75,11 @@ end
               ChainStep("step2", input_assembler(d -> (; foo=d["step1"][:foo])), ts),
               ChainStep("step3", input_assembler(d -> (; foo=d["step1"][:foo])), ts)]
         err = ArgumentError("Input assembler for step `step3` cannot depend on `[step1][foo]`; output already used by step `step2`")
-        @test_broken false # (@test_throws err NoThrowTransformChain(ch))
+        @test_broken false # (@test_throws err NoThrowDAG(ch))
     end
 end
 
-@testset "Basic `NoThrowTransformChain`" begin
+@testset "Basic `NoThrowDAG`" begin
     using TransformSpecifications: input_assembler
 
     steps = [ChainStep("init", nothing,
@@ -97,8 +97,8 @@ end
                                         x -> SchemaFooV1(;
                                                          foo=string(x.var1, "_WOW_",
                                                                     x.var2))))]
-    chain = NoThrowTransformChain(steps)
-    @test chain isa NoThrowTransformChain
+    chain = NoThrowDAG(steps)
+    @test chain isa NoThrowDAG
 
     @testset "Internals" begin
         @test issetequal(keys(chain.step_input_assemblers), keys(chain.step_transforms))
