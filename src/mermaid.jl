@@ -1,4 +1,73 @@
-# The below is exceptionally experimental and likely to change!
+#=
+This file is exceptionally experimental and likely to change!
+
+Future features:
+- link schemas to code implementation
+- ditto transform functions
+- add types to schema fields
+- update formatting of different node types
+- link specific i/o fields across steps (use https://mermaid.js.org/syntax/flowchart.html#styling-line-curves)
+- highlight style of overall input/output schema
+- support nested chains in chains in plotting
+- add option to show docstrings for schemas and/or functions
+- clean up themeing: https://mermaid.js.org/config/theming.html
+=#
+
+const DEFAULT_OUTER_STYLE = "fill:#cbd7e2,stroke:#000,stroke-width:0px;"
+const DEFAULT_STEP_STYLE = "fill:#eeedff,stroke:#000,stroke-width:2px;"
+const DEFAULT_SPEC_STYLE = "fill:#f8f7ff,stroke:#000,stroke-width:1px;"
+const DEFAULT_SPEC_FIELD_STYLE = "fill:#fff,stroke:#000,stroke-width:1px;"
+
+"""
+    mermaidify(chain::NoThrowTransformChain; direction="TB")
+
+Generate [mermaid plot](https://mermaid.js.org/) of `chain`, suitable for inclusion
+in markdown documentation.
+
+To include in markdown, do
+````markdown
+```mermaid
+{{mermaidify output}}
+```
+````
+and for html (i.e., for Documenter.jl), do
+````markdown
+<div class=\"mermaid\">
+{{mermaidify output}}
+</div>
+````
+For an example of the raw output, see [`NoThrowTransformChain`](@ref); for an example
+of the rendered output, see [the built documentation](https://beacon-biosignals.github.io/TransformSpecifications.jl/dev).
+"""
+function mermaidify(chain::NoThrowTransformChain; direction="LR",
+                    style_step=DEFAULT_STEP_STYLE,
+                    style_spec=DEFAULT_SPEC_STYLE, style_outer=DEFAULT_OUTER_STYLE,
+                    style_spec_field=DEFAULT_SPEC_FIELD_STYLE)
+    mermaid_lines = ["flowchart"]
+
+    push!(mermaid_lines, "", "%% Define steps (nodes)")
+    push!(mermaid_lines, """subgraph OUTERLEVEL["` `"]""", "direction $direction")
+    for step in chain
+        Base.append!(mermaid_lines, _mermaid_subgraph_from_chain_step(step))
+    end
+
+    push!(mermaid_lines, "", "%% Link steps (edges)")
+    keys_upper = map(_mermaid_key, collect(keys(chain)))
+    for i_key in 2:length(keys_upper)
+        arrow = "-..->"
+        push!(mermaid_lines,
+              "$(keys_upper[i_key - 1]):::classStep $arrow $(keys_upper[i_key]):::classStep")
+    end
+    push!(mermaid_lines, "", "end", "OUTERLEVEL:::classOuter ~~~ OUTERLEVEL:::classOuter")
+
+    push!(mermaid_lines, "", "%% Styling definitions")
+    for (name, style) in
+        [("classOuter", style_outer), ("classStep", style_step), ("classSpec", style_spec),
+         ("classSpecField", style_spec_field)]
+        push!(mermaid_lines, "classDef $name $style")
+    end
+    return join(mermaid_lines, "\n")
+end
 
 _ltab_spaces(str; n::Int=2) = repeat(" ", n) * str
 _mermaid_key(key) = uppercase(string(key))
@@ -48,56 +117,3 @@ function _mermaid_subgraph_from_chain_step(step::ChainStep)
     return _mermaid_subgraph(node_key, uppercasefirst(replace(string(key), "_" => " "));
                              contents=node_contents, direction="TB")
 end
-
-const DEFAULT_OUTER_STYLE = "fill:#cbd7e2,stroke:#000,stroke-width:0px;"
-const DEFAULT_STEP_STYLE = "fill:#eeedff,stroke:#000,stroke-width:2px;"
-const DEFAULT_SPEC_STYLE = "fill:#f8f7ff,stroke:#000,stroke-width:1px;"
-const DEFAULT_SPEC_FIELD_STYLE = "fill:#fff,stroke:#000,stroke-width:1px;"
-
-"""
-    mermaidify(chain::NoThrowTransformChain; direction="TB")
-
-Generate [mermaid plot](https://mermaid.js.org/) of `chain`, suitable for inclusion
-in markdown documentation. For example usage, see [`NoThrowTransformChain`](@ref).
-"""
-function mermaidify(chain::NoThrowTransformChain; direction="LR",
-                    style_step=DEFAULT_STEP_STYLE,
-                    style_spec=DEFAULT_SPEC_STYLE, style_outer=DEFAULT_OUTER_STYLE,
-                    style_spec_field=DEFAULT_SPEC_FIELD_STYLE)
-    mermaid_lines = ["flowchart"]
-
-    push!(mermaid_lines, "", "%% Define steps (nodes)")
-    push!(mermaid_lines, """subgraph OUTERLEVEL["` `"]""", "direction $direction")
-    for step in chain
-        Base.append!(mermaid_lines, _mermaid_subgraph_from_chain_step(step))
-    end
-
-    push!(mermaid_lines, "", "%% Link steps (edges)")
-    keys_upper = map(_mermaid_key, collect(keys(chain)))
-    for i_key in 2:length(keys_upper)
-        arrow = "-..->"
-        push!(mermaid_lines,
-              "$(keys_upper[i_key - 1]):::classStep $arrow $(keys_upper[i_key]):::classStep")
-    end
-    push!(mermaid_lines, "", "end", "OUTERLEVEL:::classOuter ~~~ OUTERLEVEL:::classOuter")
-
-    push!(mermaid_lines, "", "%% Styling definitions")
-    for (name, style) in
-        [("classOuter", style_outer), ("classStep", style_step), ("classSpec", style_spec),
-         ("classSpecField", style_spec_field)]
-        push!(mermaid_lines, "classDef $name $style")
-    end
-    return join(mermaid_lines, "\n")
-end
-
-#= Future features:
-- link schemas to code implementation
-- ditto transform functions
-- add types to schema fields
-- update formatting of different node types
-- link specific i/o fields across steps (use https://mermaid.js.org/syntax/flowchart.html#styling-line-curves)
-- highlight style of overall input/output schema
-- support nested chains in chains in plotting
-- add option to show docstrings for schemas and/or functions
-- clean up themeing: https://mermaid.js.org/config/theming.html
-=#

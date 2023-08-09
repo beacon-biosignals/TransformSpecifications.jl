@@ -245,31 +245,7 @@ $DOCTEST_OUTPUT_nothrowchain_ex1
 By wrapping this string in a "mermaid" code block in a markdown document,
 it can be rendered graphically. If in GitHub, this will happen automatically;
 if in e.g. Documenter.jl, [additional setup will be required](https://github.com/JuliaDocs/Documenter.jl/issues/1943).
-
-For markdown, do
-````markdown
-```mermaid
-{{mermaidify output}}
-```
-````
-and for html (i.e., for Documenter.jl), do
-````markdown
-<div class=\"mermaid\">
-{{mermaidify output}}
-</div>
-````
-This will then be displayed graphically as
-````@raw html
-<svg style="display: block; margin: 0 auto;" width="5em" heigth="5em">
-	<circle cx="2.5em" cy="2.5em" r="2em" stroke="black" stroke-width=".1em" fill="red" />
-</svg>
-````
-
-````@raw html
-<div class="mermaid">
-$(DOCTEST_OUTPUT_nothrowchain_ex1)
-</div>
-````
+See the [built documentation](https://beacon-biosignals.github.io/TransformSpecifications.jl/dev) to view this graph rendered.
 """
 struct NoThrowTransformChain <: AbstractTransformSpecification
     step_transforms::OrderedDict{String,NoThrowTransform}

@@ -6,14 +6,52 @@
 
 # TransformSpecifications.jl
 
-```@autodocs
-Modules = [TransformSpecifications]
-Private = false
+```@docs
+TransformSpecifications.TransformSpecifications
 ```
 
-## Non-exported functions and types
+## Table of contents
 
+```@contents
+Pages = ["index.md", "api.md"]
+Depth = 3
+```
+
+## AbstractTransformSpecification
 ```@autodocs
 Modules = [TransformSpecifications]
-Public = false
+Pages = ["abstract.jl"]
 ```
+
+## TransformSpecification
+```@autodocs
+Modules = [TransformSpecifications]
+Pages = ["transform.jl"]
+```
+## NoThrowTransform
+```@autodocs
+Modules = [TransformSpecifications]
+Pages = ["nothrow.jl"]
+```
+
+## NoThrowTransformChain
+```@autodocs
+Modules = [TransformSpecifications]
+Pages = ["nothrow_chain.jl"]
+```
+
+## Mermaid
+```@autodocs
+Modules = [TransformSpecifications]
+Pages = ["mermaid.jl"]
+```
+
+Here is the mermaid plot of the chain generated in [`NoThrowTransformChain`](@ref):
+<!-- ```@eval
+using TransformSpecifications
+
+md = """<div class="mermaid">
+$(TransformSpecifications.DOCTEST_OUTPUT_nothrowchain_ex1)
+</div>"""
+Markdown.parse(join(md, "\n\n"))
+``` -->

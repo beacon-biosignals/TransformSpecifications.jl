@@ -7,7 +7,8 @@ DocMeta.setdocmeta!(TransformSpecifications, :DocTestSetup,
 makedocs(; modules=[TransformSpecifications],
          sitename="TransformSpecifications.jl",
          authors="Beacon Biosignals",
-         pages=["API Documentation" => "index.md"],
+         pages=["Home" => "index.md",
+                "API Documentation" => "api.md"],
          strict=true)
 
 deploydocs(; repo="github.com/beacon-biosignals/TransformSpecifications.jl.git",
