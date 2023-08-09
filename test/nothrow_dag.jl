@@ -22,10 +22,10 @@ end
 end
 
 @testset "Basics" begin
-    step_a = ChainStep("init", nothing,
-                       TransformSpecification(SchemaFooV1, SchemaFooV1, identity))
-    step_b = ChainStep("init", nothing,
-                       NoThrowTransform(SchemaFooV1, SchemaFooV1, identity))
+    step_a = DAGStep("init", nothing,
+                     TransformSpecification(SchemaFooV1, SchemaFooV1, identity))
+    step_b = DAGStep("init", nothing,
+                     NoThrowTransform(SchemaFooV1, SchemaFooV1, identity))
     chain_a = NoThrowDAG(step_a)
     chain_b = NoThrowDAG(step_b)
     chain_c = NoThrowDAG([step_a])
@@ -38,42 +38,42 @@ end
 @testset "Construction errors" begin
     using TransformSpecifications: input_assembler
 
-    @test_throws ArgumentError("At least one step required to construct a chain") NoThrowDAG(ChainStep[])
+    @test_throws ArgumentError("At least one step required to construct a chain") NoThrowDAG(DAGStep[])
 
     @testset "First step constructor must be `nothing`" begin
         ntt = NoThrowTransform(SchemaBarV1)
-        @test NoThrowDAG([ChainStep("a", nothing, ntt)]) isa
+        @test NoThrowDAG([DAGStep("a", nothing, ntt)]) isa
               NoThrowDAG
         err = ArgumentError("Initial step's input constructor must be `nothing` (TransformSpecification{Dict{String, Any},NamedTuple}: `identity`)")
-        @test_throws err NoThrowDAG([ChainStep("a", input_assembler(identity),
-                                                          ntt)])
+        @test_throws err NoThrowDAG([DAGStep("a", input_assembler(identity),
+                                             ntt)])
     end
 
     @testset "Invalid input assembler" begin
         ts = TransformSpecification(SchemaFooV1, SchemaFooV1, identity)
         err = ArgumentError("Invalid `input_assembler`")
-        @test_throws err NoThrowDAG([ChainStep("foo", identity, ts)])
+        @test_throws err NoThrowDAG([DAGStep("foo", identity, ts)])
     end
 
     @testset "Invalid step combinations" begin
         ts = TransformSpecification(SchemaFooV1, SchemaFooV1, identity)
         err = ArgumentError("Key `foo` already exists in chain!")
-        @test_throws err NoThrowDAG([ChainStep("foo", nothing, ts),
-                                                ChainStep("foo", nothing, ts)])
+        @test_throws err NoThrowDAG([DAGStep("foo", nothing, ts),
+                                     DAGStep("foo", nothing, ts)])
 
-        ch = [ChainStep("step1", nothing, ts),
-              ChainStep("step2", input_assembler(d -> (; foo=d["x"])), ts)]
+        ch = [DAGStep("step1", nothing, ts),
+              DAGStep("step2", input_assembler(d -> (; foo=d["x"])), ts)]
         @test_throws KeyError("x") NoThrowDAG(ch)
 
-        ch = [ChainStep("step1", nothing, ts),
-              ChainStep("step2", input_assembler(d -> (; foo=d["step1"][:x])), ts)]
+        ch = [DAGStep("step1", nothing, ts),
+              DAGStep("step2", input_assembler(d -> (; foo=d["step1"][:x])), ts)]
         @test_throws KeyError(:x) NoThrowDAG(ch)
 
         # Can't wrap a broken test_throws BUT this should throw in the future,
         # when additional validation added!
-        ch = [ChainStep("step1", nothing, ts),
-              ChainStep("step2", input_assembler(d -> (; foo=d["step1"][:foo])), ts),
-              ChainStep("step3", input_assembler(d -> (; foo=d["step1"][:foo])), ts)]
+        ch = [DAGStep("step1", nothing, ts),
+              DAGStep("step2", input_assembler(d -> (; foo=d["step1"][:foo])), ts),
+              DAGStep("step3", input_assembler(d -> (; foo=d["step1"][:foo])), ts)]
         err = ArgumentError("Input assembler for step `step3` cannot depend on `[step1][foo]`; output already used by step `step2`")
         @test_broken false # (@test_throws err NoThrowDAG(ch))
     end
@@ -82,21 +82,21 @@ end
 @testset "Basic `NoThrowDAG`" begin
     using TransformSpecifications: input_assembler
 
-    steps = [ChainStep("init", nothing,
-                       NoThrowTransform(SchemaFooV1, SchemaBarV1,
-                                        x -> SchemaBarV1(; var1=x.foo * "_a",
-                                                         var2=x.foo * "_a2"))),
-             ChainStep("middle",
-                       input_assembler(d -> (; foo=d["init"][:var1])),
-                       NoThrowTransform(SchemaFooV1, SchemaFooV1,
-                                        x -> SchemaFooV1(; foo=x.foo * "_b"))),
-             ChainStep("final",
-                       input_assembler(d -> (; var1=d["init"][:var2],
-                                             var2=d["middle"][:foo])),
-                       NoThrowTransform(SchemaBarV1, SchemaFooV1,
-                                        x -> SchemaFooV1(;
-                                                         foo=string(x.var1, "_WOW_",
-                                                                    x.var2))))]
+    steps = [DAGStep("init", nothing,
+                     NoThrowTransform(SchemaFooV1, SchemaBarV1,
+                                      x -> SchemaBarV1(; var1=x.foo * "_a",
+                                                       var2=x.foo * "_a2"))),
+             DAGStep("middle",
+                     input_assembler(d -> (; foo=d["init"][:var1])),
+                     NoThrowTransform(SchemaFooV1, SchemaFooV1,
+                                      x -> SchemaFooV1(; foo=x.foo * "_b"))),
+             DAGStep("final",
+                     input_assembler(d -> (; var1=d["init"][:var2],
+                                           var2=d["middle"][:foo])),
+                     NoThrowTransform(SchemaBarV1, SchemaFooV1,
+                                      x -> SchemaFooV1(;
+                                                       foo=string(x.var1, "_WOW_",
+                                                                  x.var2))))]
     chain = NoThrowDAG(steps)
     @test chain isa NoThrowDAG
 

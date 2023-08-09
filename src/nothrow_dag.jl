@@ -1,9 +1,9 @@
 #####
-##### `ChainStep`
+##### `DAGStep`
 #####
 
 """
-    ChainStep
+    DAGStep
 
 Helper struct, used to construct [`NoThrowDAG`](@ref)s. Requires fields
 * `name::String`: Name of step, must be unique across a constructed chain
@@ -14,12 +14,12 @@ Helper struct, used to construct [`NoThrowDAG`](@ref)s. Requires fields
     should return a `NamedTuple` that can be converted to specification
     `input_specification(transform_spec)` via [convert_spec`](@ref).
 """
-struct ChainStep
+struct DAGStep
     name::String
     input_assembler::Union{TransformSpecification,Nothing}
     transform_spec::AbstractTransformSpecification
 
-    function ChainStep(name, input_assembler, transform_spec)
+    function DAGStep(name, input_assembler, transform_spec)
         if !(isnothing(input_assembler) || is_input_assembler(input_assembler))
             throw(ArgumentError("Invalid `input_assembler`"))
         end
@@ -58,7 +58,7 @@ is_input_assembler(::Any) = false
 
 """
     NoThrowDAG <: AbstractTransformSpecification
-    NoThrowDAG(steps::AbstractVector{ChainStep})
+    NoThrowDAG(steps::AbstractVector{DAGStep})
 
 Transform specification constructed from a chain of transform specifications,
 such that [`transform!`](@ref)ing consecutively constructs each step's input from
@@ -126,9 +126,9 @@ step_c_assembler = input_assembler(upstream -> (; var1=upstream["step_a"][:var],
                                                 var2=upstream["step_b"][:var]))
 # ...note that step_a is skipped, as there are no steps upstream from it.
 
-steps = [ChainStep("step_a", nothing, step_a_transform),
-         ChainStep("step_b", step_b_assembler, step_b_transform),
-         ChainStep("step_c", step_c_assembler, step_c_transform)]
+steps = [DAGStep("step_a", nothing, step_a_transform),
+         DAGStep("step_b", step_b_assembler, step_b_transform),
+         DAGStep("step_c", step_c_assembler, step_c_transform)]
 chain = NoThrowDAG(steps)
 
 # output
@@ -171,7 +171,7 @@ struct NoThrowDAG <: AbstractTransformSpecification
     step_input_assemblers::Dict{String,Any}
     _step_output_fields::Dict{String,Any}
 
-    function NoThrowDAG(init_step::ChainStep)
+    function NoThrowDAG(init_step::DAGStep)
         if !isnothing(init_step.input_assembler)
             throw(ArgumentError("Initial step's input constructor must be `nothing` ($(init_step.input_assembler))"))
         end
@@ -182,7 +182,7 @@ struct NoThrowDAG <: AbstractTransformSpecification
     end
 end
 
-function NoThrowDAG(steps::AbstractVector{<:ChainStep})
+function NoThrowDAG(steps::AbstractVector{<:DAGStep})
     length(steps) == 0 &&
         throw(ArgumentError("At least one step required to construct a chain"))
     chain = NoThrowDAG(first(steps))
@@ -192,7 +192,7 @@ function NoThrowDAG(steps::AbstractVector{<:ChainStep})
     return chain
 end
 
-function Base.push!(chain::NoThrowDAG, step::ChainStep)
+function Base.push!(chain::NoThrowDAG, step::DAGStep)
     # Safety first!
     haskey(chain.step_transforms, step.name) &&
         throw(ArgumentError("Key `$(step.name)` already exists in chain!"))
@@ -252,13 +252,13 @@ _field_map(type::Type) = type
 Base.length(chain::NoThrowDAG) = length(chain.step_transforms)
 
 """
-    get_step(chain::NoThrowDAG, name::String) -> ChainStep
-    get_step(chain::NoThrowDAG, step_index::Int) -> ChainStep
+    get_step(chain::NoThrowDAG, name::String) -> DAGStep
+    get_step(chain::NoThrowDAG, step_index::Int) -> DAGStep
 
-Return `ChainStep` with `name` or `step_index`.
+Return `DAGStep` with `name` or `step_index`.
 """
 function get_step(chain::NoThrowDAG, name::String)
-    return ChainStep(name, chain.step_input_assemblers[name], chain.step_transforms[name])
+    return DAGStep(name, chain.step_input_assemblers[name], chain.step_transforms[name])
 end
 
 function get_step(chain::NoThrowDAG, step_index::Int)
