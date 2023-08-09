@@ -61,6 +61,7 @@ is_input_assembler(::Any) = false
 ##### `NoThrowDAG`
 #####
 
+<<<<<<< HEAD
 # Saved as a const since we rely on it in two places
 const DOCTEST_OUTPUT_nothrowdag_ex1 = """
 flowchart
@@ -127,6 +128,8 @@ classDef classSpec fill:#f8f7ff,stroke:#000,stroke-width:1px;
 classDef classSpecField fill:#fff,stroke:#000,stroke-width:1px;
 """
 
+=======
+>>>>>>> main
 """
     NoThrowDAG <: AbstractTransformSpecification
     NoThrowDAG(steps::AbstractVector{DAGStep})
@@ -302,6 +305,7 @@ function Base.push!(dag::NoThrowDAG, step::DAGStep)
     return dag
 end
 
+<<<<<<< HEAD
 # Base extensions to support iterator interface: https://docs.julialang.org/en/v1/manual/interfaces/#man-interface-iteration
 Base.length(dag::NoThrowDAG) = length(dag.step_transforms)
 Base.size(dag::NoThrowDAG) = (length(dag),)
@@ -315,6 +319,8 @@ end
 
 Base.keys(dag::NoThrowDAG) = collect(keys(dag.step_transforms))
 
+=======
+>>>>>>> main
 """
     _validate_input_assembler(dag::NoThrowDAG, input_assembler::TransformSpecification)
     _validate_input_assembler(dag::NoThrowDAG, ::Nothing)
@@ -365,6 +371,11 @@ end
 field_dict_value(type::Type{<:NoThrowResult}) = field_dict_value(result_type(type))
 field_dict_value(type::Type) = type
 
+<<<<<<< HEAD
+=======
+Base.length(dag::NoThrowDAG) = length(dag.step_transforms)
+
+>>>>>>> main
 """
     get_step(dag::NoThrowDAG, name::String) -> DAGStep
     get_step(dag::NoThrowDAG, step_index::Int) -> DAGStep
@@ -376,7 +387,11 @@ function get_step(dag::NoThrowDAG, name::String)
 end
 
 function get_step(dag::NoThrowDAG, step_index::Int)
+<<<<<<< HEAD
     return get_step(dag, keys(dag)[step_index])
+=======
+    return get_step(dag, collect(keys(dag.step_transforms))[step_index])
+>>>>>>> main
 end
 
 """
