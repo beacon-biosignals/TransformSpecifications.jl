@@ -199,7 +199,7 @@ end
 function Base.push!(dag::NoThrowDAG, step::DAGStep)
     # Safety first!
     haskey(dag.step_transforms, step.name) &&
-        throw(ArgumentError("Key `$(step.name)` already exists in dag!"))
+        throw(ArgumentError("Key `$(step.name)` already exists in DAG!"))
     _validate_input_assembler(dag, step.input_assembler)
 
     # Forge it!
