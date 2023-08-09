@@ -20,7 +20,7 @@ include("nothrow.jl")
 export NoThrowResult, NoThrowTransform, nothrow_succeeded, is_identity_no_throw_transform,
        transform_unwrapped!, transform_unwrapped
 
-include("nothrow_chain.jl")
+include("nothrow_dag.jl")
 export NoThrowDAG, ChainStep, get_step
 
 #####

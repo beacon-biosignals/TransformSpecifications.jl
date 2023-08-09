@@ -18,6 +18,6 @@ include("set_up_tests.jl")
     end
 
     @testset "`NoThrowDAG`" begin
-        include("nothrow_chain.jl")
+        include("nothrow_dag.jl")
     end
 end
