@@ -8,11 +8,8 @@
 Helper struct, used to construct [`NoThrowDAG`](@ref)s. Requires fields
 * `name::String`: Name of step, must be unique across a constructed DAG
 * `transform_spec::AbstractTransformSpecification`: Transform applied by step
-* `input_assembler::UpstreamOutputsTransform`: Transform that takes in a Dictionary with keys that are the
-    names of upstream steps; the value of each of these keys is the output of that
-    upstream_step, as specified by `output_specification(upstream_step)`. The constructor
-    should return a `NamedTuple` that can be converted to specification
-    `input_specification(transform_spec)` via [convert_spec`](@ref).
+* `input_assembler::DAGStepInputAssembler`: Transform used to construct step's input;
+    see [`DAGStepInputAssembler`](@ref) for details.
 """
 struct DAGStep
     name::String
@@ -27,9 +24,19 @@ struct DAGStep
     end
 end
 
-# TODO-help: I _think_ I want to make this a type, but it's kinda annoying to have
-# to specify ANOTHER concrete type, when it really is just an instance of a
-# TransformSpecification with pre-defined types. Thoughts?!
+"""
+    DAGStepInputAssembler::TransformSpecification{Dict{String,Any},NamedTuple}
+
+    TODO: update docstream
+Transform that takes in a Dictionary with keys that are the names of upstream steps,
+where the value of each of these keys is the output of that
+upstream_step, as specified by `output_specification(upstream_step)`. The constructor
+should return a `NamedTuple` that can be converted to specification
+`input_specification(transform_spec)` via [convert_spec`](@ref).
+"""
+const DAGStepInputAssembler = TransformSpecification{Dict{String,Any},NamedTuple}
+
+#TODO->Update naming here
 """
     input_assembler(conversion_fn) -> TransformSpecification{Dict{String,Any}, NamedTuple}
 
@@ -78,7 +85,7 @@ the overall input to the DAG, its `step.input_assembler` must be `nothing`.
     this initial step. The single argument [`TransformSpecification`](@ref) constructor
     creates such an identity transform.
 
-!!! warn "DAG construction warning"
+!!! warning "DAG construction warning"
     It is the caller's responsibility to implement a DAG, and to not introduce
     any recursion or cycles. What will happen if you do? To quote Tom Lehrer,
     "[well, you ask a silly question, you get a silly answer](https://youtu.be/zWPn3esuDgU?t=189)!"
@@ -199,7 +206,7 @@ end
 function Base.push!(dag::NoThrowDAG, step::DAGStep)
     # Safety first!
     haskey(dag.step_transforms, step.name) &&
-        throw(ArgumentError("Key `$(step.name)` already exists in DAG!"))
+        throw(ArgumentError("Step with name `$(step.name)` already exists in DAG!"))
     _validate_input_assembler(dag, step.input_assembler)
 
     # Forge it!
@@ -243,7 +250,7 @@ To recurse into a specific type `MyType`, implement
 TransformSpecification.field_dict_value(t::Type{MyType}) = field_dict(t)
 ```
 
-!!! warn
+!!! warning
     Use caution when implementing a `field_dict_value` for any type that isn't explicitly
     impossible to lead to recursion, as otherwise a stack overflow may occur.
 """

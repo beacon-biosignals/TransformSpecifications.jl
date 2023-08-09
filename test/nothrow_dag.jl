@@ -56,7 +56,7 @@ end
 
     @testset "Invalid step combinations" begin
         ts = TransformSpecification(SchemaFooV1, SchemaFooV1, identity)
-        err = ArgumentError("Key `foo` already exists in DAG!")
+        err = ArgumentError("Step with name `foo` already exists in DAG!")
         @test_throws err NoThrowDAG([DAGStep("foo", nothing, ts),
                                      DAGStep("foo", nothing, ts)])
 
