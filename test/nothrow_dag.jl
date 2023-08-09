@@ -147,28 +147,28 @@ end
 end
 
 @testset "Helper utilities" begin
-    using TransformSpecifications: _field_map, construct_field_map
-    @testset "`_field_map`" begin
-        @test _field_map(String) == _field_map(NoThrowResult{String}) == String
-        @test _field_map(Dict) == _field_map(NoThrowResult{Dict}) == Dict
-        @test _field_map(SchemaFooV1) == _field_map(NoThrowResult{SchemaFooV1})
+    using TransformSpecifications: field_dict_value, field_dict
+    @testset "`field_dict_value`" begin
+        @test field_dict_value(String) == field_dict_value(NoThrowResult{String}) == String
+        @test field_dict_value(Dict) == field_dict_value(NoThrowResult{Dict}) == Dict
+        @test field_dict_value(SchemaFooV1) == field_dict_value(NoThrowResult{SchemaFooV1})
     end
 
-    @testset "`construct_field_map`" begin
-        @test construct_field_map(String) == Dict{Any,Any}()
-        @test construct_field_map(Dict) isa Dict{Symbol,Type}
-        @test construct_field_map(SchemaFooV1) ==
+    @testset "`field_dict`" begin
+        @test field_dict(String) == Dict{Any,Any}()
+        @test field_dict(Dict) isa Dict{Symbol,Type}
+        @test field_dict(SchemaFooV1) ==
               Dict{Symbol,DataType}(:list => Vector{Int64}, :foo => String)
     end
 
     @testset "Recurse into specification" begin
-        orig = construct_field_map(TestTypeV1)
+        orig = field_dict(TestTypeV1)
         @test orig == Dict(:schemafoo => SchemaFooV1, :str => String)
 
         # If we _want_ to be able to recurse into a specific specification type,
-        # define an overloaded `_field_map` implementation of it:
-        TransformSpecifications._field_map(t::Type{SchemaFooV1}) = construct_field_map(t)
-        recursed = construct_field_map(TestTypeV1)
+        # define an overloaded `field_dict_value` implementation of it:
+        TransformSpecifications.field_dict_value(t::Type{SchemaFooV1}) = field_dict(t)
+        recursed = field_dict(TestTypeV1)
         @test recursed == Dict(:schemafoo => Dict(:list => Vector{Int64}, :foo => String),
                                :str => String)
     end

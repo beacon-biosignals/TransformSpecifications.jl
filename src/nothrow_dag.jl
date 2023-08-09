@@ -181,7 +181,7 @@ struct NoThrowDAG <: AbstractTransformSpecification
         end
         step_transforms = OrderedDict(init_step.name => NoThrowTransform(init_step.transform_spec))
         step_input_assemblers = Dict(init_step.name => nothing)
-        _step_output_fields = Dict{String,Dict{Symbol,Any}}(init_step.name => construct_field_map(output_specification(init_step.transform_spec)))
+        _step_output_fields = Dict{String,Dict{Symbol,Any}}(init_step.name => field_dict(output_specification(init_step.transform_spec)))
         return new(step_transforms, step_input_assemblers, _step_output_fields)
     end
 end
@@ -206,7 +206,7 @@ function Base.push!(dag::NoThrowDAG, step::DAGStep)
     push!(dag.step_transforms, step.name => NoThrowTransform(step.transform_spec))
     push!(dag.step_input_assemblers, step.name => step.input_assembler)
     push!(dag._step_output_fields,
-          step.name => construct_field_map(output_specification(step.transform_spec)))
+          step.name => field_dict(output_specification(step.transform_spec)))
     return dag
 end
 
@@ -229,29 +229,33 @@ function _validate_input_assembler(dag::NoThrowDAG,
 end
 
 """
-    construct_field_map(type::Type{<:NoThrowResult})
-    construct_field_map(type)
+    field_dict(type::Type{<:NoThrowResult})
+    field_dict(type)
 
 Return a `Dict` where keys are `fieldnames(type)` and the value of each key is that
-field's own type. Constructed by calling `_field_map` on each input field's
+field's own type. Constructed by calling `field_dict_value` on each input field's
 type.
 
 When `type` is a `NoThrowResult{T}`, generate mapping based on unwrapped type `T`.
 
 To recurse into a specific type `MyType`, implement
 ```
-TransformSpecification._field_map(t::Type{MyType}) = construct_field_map(t)
+TransformSpecification.field_dict_value(t::Type{MyType}) = field_dict(t)
 ```
+
+!!! warn
+    Use caution when implementing a `field_dict_value` for any type that isn't explicitly
+    impossible to lead to recursion, as otherwise a stack overflow may occur.
 """
-construct_field_map(type::Type{<:NoThrowResult}) = construct_field_map(result_type(type))
-function construct_field_map(type)
+field_dict(type::Type{<:NoThrowResult}) = field_dict(result_type(type))
+function field_dict(type)
     return Dict(map(zip(fieldnames(type), fieldtypes(type))) do (fieldname, fieldtype)
-                    return fieldname => _field_map(fieldtype)
+                    return fieldname => field_dict_value(fieldtype)
                 end)
 end
 
-_field_map(type::Type{<:NoThrowResult}) = _field_map(result_type(type))
-_field_map(type::Type) = type
+field_dict_value(type::Type{<:NoThrowResult}) = field_dict_value(result_type(type))
+field_dict_value(type::Type) = type
 
 Base.length(dag::NoThrowDAG) = length(dag.step_transforms)
 
