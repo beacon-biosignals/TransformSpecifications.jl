@@ -61,6 +61,71 @@ is_input_assembler(::Any) = false
 ##### `NoThrowDAG`
 #####
 
+# Saved as a const since we rely on it in two places (in the below docstring and in the docsd)
+const DOCTEST_OUTPUT_nothrowdag_ex1 = """
+flowchart
+
+%% Define steps (nodes)
+subgraph OUTERLEVEL["` `"]
+direction LR
+subgraph STEP_A[Step a]
+  direction TB
+  subgraph STEP_A_InputSchema[Input: ExampleOneVarSchemaV1]
+    direction RL
+    STEP_A_InputSchemavar{{"var::String"}}
+    class STEP_A_InputSchemavar classSpecField
+  end
+  subgraph STEP_A_OutputSchema[Output: ExampleOneVarSchemaV1]
+    direction RL
+    STEP_A_OutputSchemavar{{"var::String"}}
+    class STEP_A_OutputSchemavar classSpecField
+  end
+  STEP_A_InputSchema:::classSpec -- fn_a --> STEP_A_OutputSchema:::classSpec
+end
+subgraph STEP_B[Step b]
+  direction TB
+  subgraph STEP_B_InputSchema[Input: ExampleOneVarSchemaV1]
+    direction RL
+    STEP_B_InputSchemavar{{"var::String"}}
+    class STEP_B_InputSchemavar classSpecField
+  end
+  subgraph STEP_B_OutputSchema[Output: ExampleOneVarSchemaV1]
+    direction RL
+    STEP_B_OutputSchemavar{{"var::String"}}
+    class STEP_B_OutputSchemavar classSpecField
+  end
+  STEP_B_InputSchema:::classSpec -- fn_b --> STEP_B_OutputSchema:::classSpec
+end
+subgraph STEP_C[Step c]
+  direction TB
+  subgraph STEP_C_InputSchema[Input: ExampleTwoVarSchemaV1]
+    direction RL
+    STEP_C_InputSchemavar1{{"var1::String"}}
+    class STEP_C_InputSchemavar1 classSpecField
+    STEP_C_InputSchemavar2{{"var2::String"}}
+    class STEP_C_InputSchemavar2 classSpecField
+  end
+  subgraph STEP_C_OutputSchema[Output: ExampleOneVarSchemaV1]
+    direction RL
+    STEP_C_OutputSchemavar{{"var::String"}}
+    class STEP_C_OutputSchemavar classSpecField
+  end
+  STEP_C_InputSchema:::classSpec -- fn_c --> STEP_C_OutputSchema:::classSpec
+end
+
+%% Link steps (edges)
+STEP_A:::classStep -..-> STEP_B:::classStep
+STEP_B:::classStep -..-> STEP_C:::classStep
+
+end
+OUTERLEVEL:::classOuter ~~~ OUTERLEVEL:::classOuter
+
+%% Styling definitions
+classDef classOuter fill:#cbd7e2,stroke:#000,stroke-width:0px;
+classDef classStep fill:#eeedff,stroke:#000,stroke-width:2px;
+classDef classSpec fill:#f8f7ff,stroke:#000,stroke-width:1px;
+classDef classSpecField fill:#fff,stroke:#000,stroke-width:1px;"""
+
 """
     NoThrowDAG <: AbstractTransformSpecification
     NoThrowDAG(steps::AbstractVector{DAGStep})
@@ -179,6 +244,27 @@ transform!(dag, ExampleTwoVarSchemaV1(; var1="wrong", var2="input schema"))
 NoThrowResult{Missing}: Transform failed
   ❌ Input to step `step_a` doesn't conform to specification `ExampleOneVarSchemaV1`. Details: ArgumentError("Invalid value set for field `var`, expected String, got a value of type Missing (missing)")
 ```
+
+To visualize this DAG, you may want to generate a plot via [mermaid](https://mermaid.js.org/),
+which is a markdown-like plotting language that is rendered automatically via GitHub and
+various other platforms. To create a mermaid plot of a DAG, use [`mermaidify`](@ref):
+
+```jldoctest nothrowdag_ex1
+mermaid_str = mermaidify(dag)
+
+# No need to dump full output string here, but let's check that the results are
+# the same as in our generated ouptut test, so that we know that the rendered graph
+# in the documentation stays synced with the code.
+print(mermaid_str)
+
+# output
+$DOCTEST_OUTPUT_nothrowdag_ex1
+```
+
+See this rendered plot in the [built documentation](https://beacon-biosignals.github.io/TransformSpecifications.jl/dev).
+
+To display a mermaid plot via e.g. Documenter.jl, [additional setup will be required](https://github.com/JuliaDocs/Documenter.jl/issues/1943).
+
 """
 struct NoThrowDAG <: AbstractTransformSpecification
     step_transforms::OrderedDict{String,NoThrowTransform}
@@ -219,6 +305,19 @@ function Base.push!(dag::NoThrowDAG, step::DAGStep)
           step.name => field_dict(output_specification(step.transform_spec)))
     return dag
 end
+
+# Base extensions to support iterator interface: https://docs.julialang.org/en/v1/manual/interfaces/#man-interface-iteration
+Base.length(dag::NoThrowDAG) = length(dag.step_transforms)
+Base.size(dag::NoThrowDAG) = (length(dag),)
+Base.firstindex(::NoThrowDAG) = 1
+Base.lastindex(dag::NoThrowDAG) = length(dag)
+Base.IteratorEltype(dag::NoThrowDAG) = eltype(dag)
+Base.eltype(dag::NoThrowDAG) = DAGStep
+function Base.iterate(dag::NoThrowDAG, state=1)
+    return state > length(dag) ? nothing : (get_step(dag, state), state + 1)
+end
+
+Base.keys(dag::NoThrowDAG) = collect(keys(dag.step_transforms))
 
 """
     _validate_input_assembler(dag::NoThrowDAG, input_assembler::TransformSpecification)
@@ -270,8 +369,6 @@ end
 field_dict_value(type::Type{<:NoThrowResult}) = field_dict_value(result_type(type))
 field_dict_value(type::Type) = type
 
-Base.length(dag::NoThrowDAG) = length(dag.step_transforms)
-
 """
     get_step(dag::NoThrowDAG, name::String) -> DAGStep
     get_step(dag::NoThrowDAG, step_index::Int) -> DAGStep
@@ -283,7 +380,7 @@ function get_step(dag::NoThrowDAG, name::String)
 end
 
 function get_step(dag::NoThrowDAG, step_index::Int)
-    return get_step(dag, collect(keys(dag.step_transforms))[step_index])
+    return get_step(dag, keys(dag)[step_index])
 end
 
 """

@@ -81,21 +81,20 @@ end
 @testset "Basic `NoThrowDAG`" begin
     using TransformSpecifications: input_assembler
 
-    steps = [DAGStep("init", nothing,
-                     NoThrowTransform(SchemaFooV1, SchemaBarV1,
-                                      x -> SchemaBarV1(; var1=x.foo * "_a",
-                                                       var2=x.foo * "_a2"))),
-             DAGStep("middle",
-                     input_assembler(d -> (; foo=d["init"][:var1])),
-                     NoThrowTransform(SchemaFooV1, SchemaFooV1,
-                                      x -> SchemaFooV1(; foo=x.foo * "_b"))),
-             DAGStep("final",
-                     input_assembler(d -> (; var1=d["init"][:var2],
-                                           var2=d["middle"][:foo])),
+    fn_step_a(x) = SchemaBarV1(; var1=x.foo * "_a", var2=x.foo * "_a2")
+    fn_step_b(x) = SchemaFooV1(; foo=x.foo * "_b")
+    fn_step_c(x) = SchemaFooV1(; foo=string(x.var1, "_WOW_", x.var2))
+
+    steps = [DAGStep("step_a", nothing,
+                     NoThrowTransform(SchemaFooV1, SchemaBarV1, fn_step_a)),
+             DAGStep("step_b",
+                     input_assembler(d -> (; foo=d["step_a"][:var1])),
+                     NoThrowTransform(SchemaFooV1, SchemaFooV1, fn_step_b)),
+             DAGStep("step_c",
+                     input_assembler(d -> (; var1=d["step_a"][:var2],
+                                           var2=d["step_b"][:foo])),
                      NoThrowTransform(SchemaBarV1, SchemaFooV1,
-                                      x -> SchemaFooV1(;
-                                                       foo=string(x.var1, "_WOW_",
-                                                                  x.var2))))]
+                                      fn_step_c))]
     dag = NoThrowDAG(steps)
     @test dag isa NoThrowDAG
 
@@ -103,6 +102,10 @@ end
         @test issetequal(keys(dag.step_input_assemblers), keys(dag.step_transforms))
         @test issetequal(keys(dag._step_output_fields), keys(dag.step_transforms))
         @test length(steps) == length(dag) == 3
+        @test size(dag) == (3,)
+        @test firstindex(dag) == 1
+        @test lastindex(dag) == 3
+        @test Base.IteratorEltype(dag) == eltype(dag) == DAGStep
         @test isequal(steps, map(i -> get_step(dag, i), 1:length(dag)))
         @test isequal(steps, map(n -> get_step(dag, n), [s.name for s in steps]))
 
@@ -132,7 +135,7 @@ end
     @testset "Nonconforming input fails" begin
         result = transform!(dag, SchemaBarV1(; var1="yay", var2="whee"))
         @test !nothrow_succeeded(result)
-        err_str = "Input to step `init` doesn't conform to specification `SchemaFooV1`. \
+        err_str = "Input to step `step_a` doesn't conform to specification `SchemaFooV1`. \
                    Details: ArgumentError(\"Invalid value set for field `foo`, expected String, \
                    got a value of type Missing (missing)\")"
         @test isequal(err_str, only(result.violations))
@@ -143,6 +146,18 @@ end
         @test isnothing(_validate_input_assembler(dag, nothing))
         @test_throws KeyError _validate_input_assembler(dag,
                                                         input_assembler(d -> d[:invalid_step]["foo"]))
+    end
+
+    @testset "`mermaidify" begin
+        ref_test_file = joinpath(pkgdir(TransformSpecifications), "test", "reference_tests",
+                                 "mermaid_nothrowdag.md")
+        ref_str = read(ref_test_file, String)
+        test_str = ("```mermaid\n$(mermaidify(dag))\n```\n")
+        @test isequal(ref_str, test_str)
+
+        # If the test failed because the generated output is intentionally different,
+        # update the reference by doing
+        # write(ref_test_file, test_str)
     end
 end
 

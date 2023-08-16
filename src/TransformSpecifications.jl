@@ -23,6 +23,9 @@ export NoThrowResult, NoThrowTransform, nothrow_succeeded, is_identity_no_throw_
 include("nothrow_dag.jl")
 export NoThrowDAG, DAGStep, get_step
 
+include("mermaid.jl")
+export mermaidify
+
 #####
 ##### Base extensions
 #####
