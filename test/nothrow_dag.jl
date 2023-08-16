@@ -113,18 +113,6 @@ end
         @test_throws BoundsError get_step(dag, 15)
     end
 
-    @testset "DAG as iterator" begin
-        @test size(dag) == (3,)
-        @test issetequal(keys(dag._step_output_fields), keys(dag.step_transforms))
-        @test length(steps) == length(dag) == 3
-
-        @test isequal(steps, map(i -> get_step(dag, i), 1:length(dag)))
-        @test isequal(steps, map(n -> get_step(dag, n), [s.name for s in steps]))
-
-        @test_throws KeyError get_step(dag, "nonexistent_step")
-        @test_throws BoundsError get_step(dag, 15)
-    end
-
     @testset "Externals" begin
         @test dag isa AbstractTransformSpecification
         @test input_specification(dag) == SchemaFooV1

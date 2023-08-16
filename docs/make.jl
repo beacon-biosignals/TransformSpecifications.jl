@@ -26,7 +26,7 @@ mermaid.initialize({ startOnLoad: true });
 """
 # ...and create "/src/visualization.md":
 index_md = init_mermaid * index_md
-open(dirname(@__FILE__) * "/src/index.md", "w") do io
+open(joinpath(dirname(@__FILE__), "src/index.md"), "w") do io
     return write(io, index_md)
 end
 
