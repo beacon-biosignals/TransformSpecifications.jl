@@ -61,7 +61,7 @@ is_input_assembler(::Any) = false
 ##### `NoThrowDAG`
 #####
 
-# Saved as a const since we rely on it in two places
+# Saved as a const since we rely on it in two places (in the below docstring and in the docsd)
 const DOCTEST_OUTPUT_nothrowdag_ex1 = """
 flowchart
 
@@ -124,8 +124,7 @@ OUTERLEVEL:::classOuter ~~~ OUTERLEVEL:::classOuter
 classDef classOuter fill:#cbd7e2,stroke:#000,stroke-width:0px;
 classDef classStep fill:#eeedff,stroke:#000,stroke-width:2px;
 classDef classSpec fill:#f8f7ff,stroke:#000,stroke-width:1px;
-classDef classSpecField fill:#fff,stroke:#000,stroke-width:1px;
-"""
+classDef classSpecField fill:#fff,stroke:#000,stroke-width:1px;"""
 
 """
     NoThrowDAG <: AbstractTransformSpecification
@@ -246,21 +245,26 @@ NoThrowResult{Missing}: Transform failed
   ❌ Input to step `step_a` doesn't conform to specification `ExampleOneVarSchemaV1`. Details: ArgumentError("Invalid value set for field `var`, expected String, got a value of type Missing (missing)")
 ```
 
-To visualize this DAG, you may want to generate a [mermaid plot](https://mermaid.js.org/).
-To do this, use [`mermaidify`](@ref):
+To visualize this DAG, you may want to generate a plot via [mermaid](https://mermaid.js.org/),
+which is a markdown-like plotting language that is rendered automatically via GitHub and
+various other platforms. To create a mermaid plot of a DAG, use [`mermaidify`](@ref):
 
 ```jldoctest nothrowdag_ex1
 mermaid_str = mermaidify(dag)
+
+# No need to dump full output string here, but let's check that the results are
+# the same as in our generated ouptut test, so that we know that the rendered graph
+# in the documentation stays synced with the code.
 print(mermaid_str)
 
 # output
 $DOCTEST_OUTPUT_nothrowdag_ex1
 ```
 
-By wrapping this string in a "mermaid" code block in a markdown document,
-it can be rendered graphically. If in GitHub, this will happen automatically;
-if in e.g. Documenter.jl, [additional setup will be required](https://github.com/JuliaDocs/Documenter.jl/issues/1943).
-See the [built documentation](https://beacon-biosignals.github.io/TransformSpecifications.jl/dev) to view this graph rendered.
+See this rendered plot in the [built documentation](https://beacon-biosignals.github.io/TransformSpecifications.jl/dev).
+
+To display a mermaid plot via e.g. Documenter.jl, [additional setup will be required](https://github.com/JuliaDocs/Documenter.jl/issues/1943).
+
 """
 struct NoThrowDAG <: AbstractTransformSpecification
     step_transforms::OrderedDict{String,NoThrowTransform}
