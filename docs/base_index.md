@@ -21,7 +21,6 @@ let us look at the high-level steps one follows to define such a pipeline using 
 5. Create a DAG using [`DAGStep`](@ref) or [`NoThrowDAG`](@ref) to assemble all of the components and assemblers into a DAG.
 6. Use it! Apply the DAG to inputs using [`transform!`](@ref) or [`transform`](@ref), and create a mermaid diagram using [`mermaidify`](@ref).
 
-
 With these general steps in mind, it can help to see some examples.
 
 - For example of all of these steps together, see [`NoThrowDAG`](@ref).
