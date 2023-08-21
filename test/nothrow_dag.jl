@@ -36,8 +36,6 @@ end
 end
 
 @testset "Construction errors" begin
-    using TransformSpecifications: input_assembler
-
     @test_throws ArgumentError("At least one step required to construct a DAG") NoThrowDAG(DAGStep[])
 
     @testset "First step constructor must be `nothing`" begin
@@ -79,8 +77,6 @@ end
 end
 
 @testset "Basic `NoThrowDAG`" begin
-    using TransformSpecifications: input_assembler
-
     fn_step_a(x) = SchemaBarV1(; var1=x.foo * "_a", var2=x.foo * "_a2")
     fn_step_b(x) = SchemaFooV1(; foo=x.foo * "_b")
     fn_step_c(x) = SchemaFooV1(; foo=string(x.var1, "_WOW_", x.var2))
