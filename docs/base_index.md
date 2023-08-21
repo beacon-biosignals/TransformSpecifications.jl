@@ -1,7 +1,7 @@
 # TransformSpecifications.jl
 
 This package enables structured transform elements via defined I/O specifications.
-- For the abstract interface, see [`AbstractTransformSpecification`](@ref)
+- For the abstract interface, see [TransformSpecifications interface](@ref)
 - For a basic concrete transform, see [`TransformSpecification`](@ref)
 - For transforms that catch exceptions and return them as formatted violations, see [`NoThrowTransform`](@ref) (and [`NoThrowResult`](@ref)).
 - For a compound transform that is itself a concrete `AbstractTransformSpecification` and is constructed from a DAG of `AbstractTransformSpecification`s, see [`NoThrowDAG`](@ref)
@@ -13,13 +13,6 @@ This package enables structured transform elements via defined I/O specification
 ```@contents
 Pages = ["index.md", "api.md"]
 Depth = 3
-```
-
-## `AbstractTransformSpecification`
-```@autodocs
-Modules = [TransformSpecifications]
-Pages = ["abstract.jl"]
-Private = false
 ```
 
 ## `TransformSpecification`
@@ -54,6 +47,31 @@ Pages = ["mermaid.jl"]
 Private = false
 ```
 
+## TransformSpecifications interface
 
+TransformSpecifications provides a general interface which allows the creation of new subtypes of `AbstractTransformSpecification`
+that can be used to implement transformation.
 
+New transformation types *must* subtype `AbstractTransformSpecification`, and implement the following required methods.
 
+### Required interface type
+```@docs
+TransformSpecifications.AbstractTransformSpecification
+```
+
+### Required interface methods
+
+```@docs
+TransformSpecifications.transform!
+TransformSpecifications.input_specification
+TransformSpecifications.output_specification
+```
+
+### Other interface methods
+
+These methods have reasonable fallback definitions and should only be defined for new types if there is some reason
+to prefer a custom implementation over the default fallback.
+
+```@docs
+TransformSpecifications.transform
+```
