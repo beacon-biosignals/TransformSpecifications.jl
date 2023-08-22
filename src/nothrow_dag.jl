@@ -176,7 +176,6 @@ from a vector of `DAGSteps`:
 
 ```jldoctest nothrowdag_ex1
 using Legolas: @schema, @version
-using TransformSpecifications: input_assembler
 
 @schema "example-one-var" ExampleOneVarSchema
 @version ExampleOneVarSchemaV1 begin

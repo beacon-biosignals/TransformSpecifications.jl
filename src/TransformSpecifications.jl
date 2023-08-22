@@ -21,7 +21,7 @@ export NoThrowResult, NoThrowTransform, nothrow_succeeded, is_identity_no_throw_
        transform_unwrapped!, transform_unwrapped
 
 include("nothrow_dag.jl")
-export NoThrowDAG, DAGStep, get_step
+export NoThrowDAG, DAGStep, get_step, input_assembler
 
 include("mermaid.jl")
 export mermaidify
