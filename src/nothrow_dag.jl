@@ -423,7 +423,6 @@ function transform!(dag::NoThrowDAG, input)
         @debug "Applying step `$name`..."
 
         # 1. First, assemble the step's input
-        InSpec = input_specification(step)
         input = if i_step == 1
             # The initial input record does not need to be constructed---it is
             # :just: the initial input to the dag at large
@@ -439,6 +438,7 @@ function transform!(dag::NoThrowDAG, input)
         # ...and check that it meets the step's input specification.
         # (Even though this would happen for "free" inside the step's transform,
         # we check here first so that we can surface a more informative error message)
+        InSpec = input_specification(step)
         try
             convert_spec(InSpec, input)
         catch e
@@ -475,8 +475,7 @@ function transform_unwrapped!(dag::NoThrowDAG, input)
     for (i_step, (name, step)) in enumerate(dag.step_transforms)
         @debug "Applying step `$name`..."
 
-        # 1. First, assemble the step's input
-        InSpec = input_specification(step)
+        @debug "...assemble the step's input"
         input = if i_step == 1
             # The initial input record does not need to be constructed---it is
             # :just: the initial input to the dag at large
@@ -485,18 +484,19 @@ function transform_unwrapped!(dag::NoThrowDAG, input)
             transform!(dag.step_input_assemblers[name], component_results)
         end
 
-        # ...and check that it meets the step's input specification.
+        @debug "...check that it meets the step's input specification"
         # (Even though this would happen for "free" inside the step's transform,
         # we check here first so that we can surface a more informative error message)
+        InSpec = input_specification(step)
         try
             convert_spec(InSpec, input)
         catch
             rethrow(ArgumentError("Input to step `$name` doesn't conform to specification `$(InSpec)`"))
         end
 
-        # 2. Apply the step's transform!
+        @debug "...apply the step's transform"
         result = transform_unwrapped!(step, input)
-        component_results[name] = result
+        component_results[name] = isa(result, NoThrowResult) ? result.result : result
     end
     return last(component_results)[2]
 end

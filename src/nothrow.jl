@@ -302,7 +302,10 @@ output will be of type `output_specification(ntt.transform_spec)` rather than a
 
 See also: [`transform_unwrapped`](@ref)
 """
-transform_unwrapped!(ntt::NoThrowTransform, input) = transform!(ntt.transform_spec, input)
+function transform_unwrapped!(ntt::NoThrowTransform, input)
+    return is_identity_no_throw_transform(ntt) ? input :
+           transform!(ntt.transform_spec, input)
+end
 
 """
     transform_unwrapped(ntt::NoThrowTransform, input)
@@ -310,7 +313,10 @@ transform_unwrapped!(ntt::NoThrowTransform, input) = transform!(ntt.transform_sp
 Non-mutating implmementation of [`transform_unwrapped!`](@ref); applies
 `transform(ntt.transform_spec, input)`.
 """
-transform_unwrapped(ntt::NoThrowTransform, input) = transform(ntt.transform_spec, input)
+function transform_unwrapped(ntt::NoThrowTransform, input)
+    return is_identity_no_throw_transform(ntt) ? input :
+           transform(ntt.transform_spec, input)
+end
 
 """
     identity_no_throw_result(result) -> NoThrowResult
