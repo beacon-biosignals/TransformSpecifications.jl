@@ -42,8 +42,7 @@ end
         ntt = NoThrowTransform(SchemaBarV1)
         @test NoThrowDAG([DAGStep("a", nothing, ntt)]) isa NoThrowDAG
         err = ArgumentError("Initial step's input constructor must be `nothing` (TransformSpecification{Dict{String, Any},NamedTuple}: `identity`)")
-        @test_throws err NoThrowDAG([DAGStep("a", input_assembler(identity),
-                                             ntt)])
+        @test_throws err NoThrowDAG([DAGStep("a", input_assembler(identity), ntt)])
     end
 
     @testset "Invalid input assembler" begin
@@ -127,7 +126,7 @@ end
         dag_output2 = transform!(dag, conforming_input_record)
         @test isequal(dag_output, dag_output2)
 
-        unwrapped_output = transform_unwrapped!(dag,  conforming_input_record)
+        unwrapped_output = transform_unwrapped!(dag, conforming_input_record)
         @test isequal(dag_output.result, unwrapped_output)
     end
 
@@ -139,10 +138,8 @@ end
                    got a value of type Missing (missing)\")"
         @test isequal(err_str, only(result.violations))
 
-        @test_throws ArgumentError("Input to step `step_a` doesn't conform to specification `SchemaFooV1`") transform_unwrapped!(dag,
-                                                                                                                                 SchemaBarV1(;
-                                                                                                                                             var1="yay",
-                                                                                                                                             var2="whee"))
+        err = ArgumentError("Input to step `step_a` doesn't conform to specification `SchemaFooV1`")
+        @test_throws err transform_unwrapped!(dag, SchemaBarV1(; var1="yay", var2="whee"))
     end
 
     @testset "`_validate_input_assembler`" begin
