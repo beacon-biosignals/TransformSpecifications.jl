@@ -108,12 +108,24 @@ function _mermaid_subgraph_from_dag_step(step::DAGStep)
     # Helper function that adds a "specification" box (graph node), which lists the internal
     # fields of the specification
     _schema_subgraph = (fieldmap::Dict, prefix) -> begin
+        # @info "okay"
         content = map(collect(keys(fieldmap))) do fieldname
             type = fieldmap[fieldname]
             node_name = _field_node_name(fieldname, prefix, node_key)
-            return ["$(node_name){{\"$fieldname::$type\"}}",
+            node_contents = if type isa Dict{Symbol,Type}
+                # Special-case where we're replacing a dict that has been generated
+                # from a different type:
+                fieldstr = replace(string(type), "Dict{Symbol, Type}(:" => "", ")" => "",
+                                   " => " => "::",
+                                   ", :" => ",\n  ")
+                "$(node_name){{\"$fieldname:\n  $fieldstr\"}}"
+            else
+                "$(node_name){{\"$fieldname::$type\"}}"
+            end
+            return [node_contents,
                     "class $(node_name) classSpecField"]
         end
+        # @info content
         return collect(Iterators.flatten(content))
     end
 
