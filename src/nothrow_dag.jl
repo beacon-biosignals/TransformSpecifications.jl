@@ -461,6 +461,46 @@ function transform!(dag::NoThrowDAG, input)
     return NoThrowResult(; warnings, result=last(component_results)[2])
 end
 
+"""
+    transform_unwrapped!(dag::NoThrowDAG, input)
+
+Apply [`transform!`](@ref) on `dag` steps such that the resultant
+output will be of type `output_specification(ntt.transform_spec)` rather than a
+`NoThrowResult`, and any failure _will_ result in throwing an error.
+Utility for debugging `NoThrowTransform`s by consecutively applying `transform!(step, input)`
+on each step, such that the output of each step is a
+"""
+function transform_unwrapped!(dag::NoThrowDAG, input)
+    component_results = OrderedDict{String,Any}()
+    for (i_step, (name, step)) in enumerate(dag.step_transforms)
+        @debug "Applying step `$name`..."
+
+        # 1. First, assemble the step's input
+        InSpec = input_specification(step)
+        input = if i_step == 1
+            # The initial input record does not need to be constructed---it is
+            # :just: the initial input to the dag at large
+            input
+        else
+            transform!(dag.step_input_assemblers[name], component_results)
+        end
+
+        # ...and check that it meets the step's input specification.
+        # (Even though this would happen for "free" inside the step's transform,
+        # we check here first so that we can surface a more informative error message)
+        try
+            convert_spec(InSpec, input)
+        catch
+            rethrow(ArgumentError("Input to step `$name` doesn't conform to specification `$(InSpec)`"))
+        end
+
+        # 2. Apply the step's transform!
+        result = transform_unwrapped!(step, input)
+        component_results[name] = result
+    end
+    return last(component_results)[2]
+end
+
 function Base.show(io::IO, c::NoThrowDAG)
     str = "NoThrowDAG ($(input_specification(c)) => $(result_type(output_specification(c)))):\n"
     for (i, (k, v)) in enumerate(c.step_transforms)

@@ -126,6 +126,9 @@ end
         @test !(conforming_input_record isa input_specification(dag))
         dag_output2 = transform!(dag, conforming_input_record)
         @test isequal(dag_output, dag_output2)
+
+        unwrapped_output = transform_unwrapped!(dag,  conforming_input_record)
+        @test isequal(dag_output.result, unwrapped_output)
     end
 
     @testset "Nonconforming input fails" begin
@@ -135,6 +138,11 @@ end
                    Details: ArgumentError(\"Invalid value set for field `foo`, expected String, \
                    got a value of type Missing (missing)\")"
         @test isequal(err_str, only(result.violations))
+
+        @test_throws ArgumentError("Input to step `step_a` doesn't conform to specification `SchemaFooV1`") transform_unwrapped!(dag,
+                                                                                                                                 SchemaBarV1(;
+                                                                                                                                             var1="yay",
+                                                                                                                                             var2="whee"))
     end
 
     @testset "`_validate_input_assembler`" begin
