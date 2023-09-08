@@ -462,7 +462,7 @@ function transform!(dag::NoThrowDAG, input)
 end
 
 """
-    transform_unwrapped!(dag::NoThrowDAG, input)
+    transform_force_throw!(dag::NoThrowDAG, input)
 
 Apply [`transform!`](@ref) on `dag` steps such that the resultant
 output will be of type `output_specification(ntt.transform_spec)` rather than a
@@ -470,7 +470,7 @@ output will be of type `output_specification(ntt.transform_spec)` rather than a
 Utility for debugging `NoThrowTransform`s by consecutively applying `transform!(step, input)`
 on each step, such that the output of each step is a
 """
-function transform_unwrapped!(dag::NoThrowDAG, input)
+function transform_force_throw!(dag::NoThrowDAG, input)
     component_results = OrderedDict{String,Any}()
     for (i_step, (name, step)) in enumerate(dag.step_transforms)
         @debug "Applying step `$name`..."
@@ -495,7 +495,7 @@ function transform_unwrapped!(dag::NoThrowDAG, input)
         end
 
         @debug "...apply the step's transform"
-        result = transform_unwrapped!(step, input)
+        result = transform_force_throw!(step, input)
         component_results[name] = isa(result, NoThrowResult) ? result.result : result
     end
     return last(component_results)[2]

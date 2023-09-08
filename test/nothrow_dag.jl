@@ -126,7 +126,7 @@ end
         dag_output2 = transform!(dag, conforming_input_record)
         @test isequal(dag_output, dag_output2)
 
-        unwrapped_output = transform_unwrapped!(dag, conforming_input_record)
+        unwrapped_output = transform_force_throw!(dag, conforming_input_record)
         @test isequal(dag_output.result, unwrapped_output)
     end
 
@@ -139,7 +139,7 @@ end
         @test isequal(err_str, only(result.violations))
 
         err = ArgumentError("Input to step `step_a` doesn't conform to specification `SchemaFooV1`")
-        @test_throws err transform_unwrapped!(dag, SchemaBarV1(; var1="yay", var2="whee"))
+        @test_throws err transform_force_throw!(dag, SchemaBarV1(; var1="yay", var2="whee"))
     end
 
     @testset "`_validate_input_assembler`" begin
