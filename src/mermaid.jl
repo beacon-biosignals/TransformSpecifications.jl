@@ -111,7 +111,17 @@ function _mermaid_subgraph_from_dag_step(step::DAGStep)
         content = map(collect(keys(fieldmap))) do fieldname
             type = fieldmap[fieldname]
             node_name = _field_node_name(fieldname, prefix, node_key)
-            return ["$(node_name){{\"$fieldname::$type\"}}",
+            node_contents = if type isa Dict{Symbol,Type}
+                # Special-case where we're replacing a dict that has been generated
+                # from a different type:
+                fieldstr = replace(string(type), "Dict{Symbol, Type}(:" => "", ")" => "",
+                                   " => " => "::",
+                                   ", :" => ",\n  ")
+                "$(node_name){{\"$fieldname:\n  $fieldstr\"}}"
+            else
+                "$(node_name){{\"$fieldname::$type\"}}"
+            end
+            return [node_contents,
                     "class $(node_name) classSpecField"]
         end
         return collect(Iterators.flatten(content))
@@ -125,19 +135,24 @@ function _mermaid_subgraph_from_dag_step(step::DAGStep)
         _mermaid_subgraph(node_key * prefix, label; contents, direction="RL")
     end
 
-    # ...and output spec...
-    outputs_subgraph = let
-        prefix = "_OutputSchema"
-        type = result_type(output_specification(process))
-        label = string("Output: ", type)
-        contents = _schema_subgraph(field_dict(type), prefix)
-        _mermaid_subgraph(node_key * prefix, label; contents, direction="RL")
-    end
+    if is_identity_no_throw_transform(step.transform_spec)
+        contents = reduce(vcat,
+                          [inputs_subgraph, "class $(node_key)_InputSchema classSpec"])
+    else
+        # ...and output spec...
+        outputs_subgraph = let
+            prefix = "_OutputSchema"
+            type = result_type(output_specification(process))
+            label = string("Output: ", type)
+            contents = _schema_subgraph(field_dict(type), prefix)
+            _mermaid_subgraph(node_key * prefix, label; contents, direction="RL")
+        end
 
-    # ...and add an arrow (edge) between them, that is labeled with the dag step's transform function
-    node_contents = reduce(vcat,
-                           [inputs_subgraph, outputs_subgraph,
-                            "$(node_key)_InputSchema:::classSpec -- $(process.transform_spec.transform_fn) --> $(node_key)_OutputSchema:::classSpec"])
+        # ...and add an arrow (edge) between them, that is labeled with the dag step's transform function
+        contents = reduce(vcat,
+                          [inputs_subgraph, outputs_subgraph,
+                           "$(node_key)_InputSchema:::classSpec -- $(process.transform_spec.transform_fn) --> $(node_key)_OutputSchema:::classSpec"])
+    end
     return _mermaid_subgraph(node_key, uppercasefirst(replace(string(key), "_" => " "));
-                             contents=node_contents, direction="TB")
+                             contents, direction="TB")
 end
