@@ -251,7 +251,7 @@ the cause of failure in the output `violations` field.
 
 !!! note
   For debugging purposes, it may be helpful to bypass the "no-throw" feature and
-  so as to have access to a callstack. To do this, use [`transform_unwrapped!`](@ref)
+  so as to have access to a callstack. To do this, use [`transform_force_throw!`](@ref)
   in place of `transform!`.
 
 See also: [`convert_spec`](@ref)
@@ -293,24 +293,30 @@ function Base.show(io::IO, ntt::NoThrowTransform)
 end
 
 """
-    transform_unwrapped!(ntt::NoThrowTransform, input)
+    transform_force_throw!(ntt::NoThrowTransform, input)
 
 Apply [`transform!`](@ref) on inner `ntt.transform_spec`, such that the resultant
 output will be of type `output_specification(ntt.transform_spec)` rather than a
 `NoThrowResult`, any failure _will_ result in throwing an error. Utility for debugging
 `NoThrowTransform`s.
 
-See also: [`transform_unwrapped`](@ref)
+See also: [`transform_force_throw`](@ref)
 """
-transform_unwrapped!(ntt::NoThrowTransform, input) = transform!(ntt.transform_spec, input)
+function transform_force_throw!(ntt::NoThrowTransform, input)
+    return is_identity_no_throw_transform(ntt) ? input :
+           transform!(ntt.transform_spec, input)
+end
 
 """
-    transform_unwrapped(ntt::NoThrowTransform, input)
+    transform_force_throw(ntt::NoThrowTransform, input)
 
-Non-mutating implmementation of [`transform_unwrapped!`](@ref); applies
+Non-mutating implmementation of [`transform_force_throw!`](@ref); applies
 `transform(ntt.transform_spec, input)`.
 """
-transform_unwrapped(ntt::NoThrowTransform, input) = transform(ntt.transform_spec, input)
+function transform_force_throw(ntt::NoThrowTransform, input)
+    return is_identity_no_throw_transform(ntt) ? input :
+           transform(ntt.transform_spec, input)
+end
 
 """
     identity_no_throw_result(result) -> NoThrowResult

@@ -164,10 +164,10 @@ end
         result = transform!(ntt, conforming_input_record)
         @test nothrow_succeeded(result)
 
-        result_unwrapped = transform_unwrapped!(ntt, conforming_input_record)
+        result_unwrapped = transform_force_throw!(ntt, conforming_input_record)
         @test isequal(result.result, result_unwrapped)
 
-        result_unwrapped2 = transform_unwrapped(ntt, conforming_input_record)
+        result_unwrapped2 = transform_force_throw(ntt, conforming_input_record)
         @test isequal(result.result, result_unwrapped)
         @test isequal(result_unwrapped, result_unwrapped2)
     end
@@ -189,9 +189,9 @@ end
         @test isequal(result.result, result_nested.result)
         @test result_nested.warnings == ["woohoo"]
 
-        result_unwrapped = transform_unwrapped!(ntt, input_record)
+        result_unwrapped = transform_force_throw!(ntt, input_record)
         @test result_unwrapped isa SchemaBV1
-        result_nested_unwrapped = transform_unwrapped!(ntt_nested, input_record)
+        result_nested_unwrapped = transform_force_throw!(ntt_nested, input_record)
         @test result_nested_unwrapped isa NoThrowResult{SchemaBV1}
     end
 
@@ -202,7 +202,7 @@ end
         @test !nothrow_succeeded(result)
         @test startswith(only(result.violations),
                          "Input doesn't conform to specification `SchemaAV1`. Details: ")
-        @test_throws ArgumentError transform_unwrapped!(ntt, nonconforming_input_record)
+        @test_throws ArgumentError transform_force_throw!(ntt, nonconforming_input_record)
     end
 
     @testset "Nonconforming transform fails" begin
@@ -214,7 +214,8 @@ end
         @test !nothrow_succeeded(result)
         @test isequal(only(result.violations),
                       "Unexpected violation. Details: $err")
-        @test_throws ErrorException transform_unwrapped!(ntt_unexpected_throw, input_record)
+        @test_throws ErrorException transform_force_throw!(ntt_unexpected_throw,
+                                                           input_record)
     end
 
     @testset "Nonconforming output fails" begin
@@ -225,7 +226,7 @@ end
         @test !nothrow_succeeded(result)
         @test isequal(only(result.violations),
                       "Output doesn't conform to specification `NoThrowResult{SchemaAV1}`; is instead a `NoThrowResult{SchemaBV1}`")
-        @test_throws ErrorException transform_unwrapped!(ntt_expected_throw, input_record)
+        @test_throws ErrorException transform_force_throw!(ntt_expected_throw, input_record)
 
         ntt_nonconforming_out = NoThrowTransform(SchemaAV1, SchemaBV1,
                                                  input -> NoThrowResult(input))
@@ -233,8 +234,8 @@ end
         @test !nothrow_succeeded(result)
         @test isequal(only(result.violations),
                       "Output doesn't conform to specification `NoThrowResult{SchemaBV1}`; is instead a `NoThrowResult{SchemaAV1}`")
-        @test_throws ErrorException transform_unwrapped!(ntt_nonconforming_out,
-                                                         input_record)
+        @test_throws ErrorException transform_force_throw!(ntt_nonconforming_out,
+                                                           input_record)
     end
 
     @testset "Warnings forwarded" begin
@@ -246,7 +247,7 @@ end
         @test result isa NoThrowResult{SchemaBV1}
         @test result.warnings == ["Okay now..."]
 
-        result_unwrapped = transform_unwrapped!(ntt_warn, SchemaAV1(; foo="rabbit"))
+        result_unwrapped = transform_force_throw!(ntt_warn, SchemaAV1(; foo="rabbit"))
 
         # For non-NoThrowResult output specs, we'd expect
         # isequal(result.result, result_unwrapped)---

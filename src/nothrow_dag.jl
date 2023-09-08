@@ -415,6 +415,8 @@ Return [`NoThrowResult`](@ref) of sequentially [`transform!`](@ref)ing all
 Before each step, that step's `input_assembler` is called on the results of all
 previous processing steps; this constructor generates input that conforms to the
 step's `input_specification`.
+
+See also: [`transform_force_throw!`](@ref)
 """
 function transform!(dag::NoThrowDAG, input)
     warnings = String[]
@@ -423,7 +425,6 @@ function transform!(dag::NoThrowDAG, input)
         @debug "Applying step `$name`..."
 
         # 1. First, assemble the step's input
-        InSpec = input_specification(step)
         input = if i_step == 1
             # The initial input record does not need to be constructed---it is
             # :just: the initial input to the dag at large
@@ -439,6 +440,7 @@ function transform!(dag::NoThrowDAG, input)
         # ...and check that it meets the step's input specification.
         # (Even though this would happen for "free" inside the step's transform,
         # we check here first so that we can surface a more informative error message)
+        InSpec = input_specification(step)
         try
             convert_spec(InSpec, input)
         catch e
@@ -459,6 +461,45 @@ function transform!(dag::NoThrowDAG, input)
         component_results[name] = result.result
     end
     return NoThrowResult(; warnings, result=last(component_results)[2])
+end
+
+"""
+    transform_force_throw!(dag::NoThrowDAG, input)
+
+Utility for debugging [`NoThrowDAG`](@ref)s by consecutively applying `transform!(step, input)`
+on each step, such that the output of each step is of type
+`output_specification(step.transform_spec)` rather than a `NoThrowResult`, and any
+failure _will_ result in throwing an error.
+"""
+function transform_force_throw!(dag::NoThrowDAG, input)
+    component_results = OrderedDict{String,Any}()
+    for (i_step, (name, step)) in enumerate(dag.step_transforms)
+        @debug "Applying step `$name`..."
+
+        @debug "...assemble the step's input"
+        input = if i_step == 1
+            # The initial input record does not need to be constructed---it is
+            # :just: the initial input to the dag at large
+            input
+        else
+            transform!(dag.step_input_assemblers[name], component_results)
+        end
+
+        @debug "...check that it meets the step's input specification"
+        # (Even though this would happen for "free" inside the step's transform,
+        # we check here first so that we can surface a more informative error message)
+        InSpec = input_specification(step)
+        try
+            convert_spec(InSpec, input)
+        catch
+            rethrow(ArgumentError("Input to step `$name` doesn't conform to specification `$(InSpec)`"))
+        end
+
+        @debug "...apply the step's transform"
+        result = transform_force_throw!(step, input)
+        component_results[name] = isa(result, NoThrowResult) ? result.result : result
+    end
+    return last(component_results)[2]
 end
 
 function Base.show(io::IO, c::NoThrowDAG)

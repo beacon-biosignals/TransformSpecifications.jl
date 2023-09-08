@@ -18,7 +18,7 @@ export TransformSpecification
 
 include("nothrow.jl")
 export NoThrowResult, NoThrowTransform, nothrow_succeeded, is_identity_no_throw_transform,
-       transform_unwrapped!, transform_unwrapped
+       transform_force_throw!, transform_force_throw
 
 include("nothrow_dag.jl")
 export NoThrowDAG, DAGStep, get_step, input_assembler
