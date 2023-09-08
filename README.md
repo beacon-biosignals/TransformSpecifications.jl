@@ -32,7 +32,8 @@ julia> ntt = NoThrowTransform(String, Integer, length)
 # Valid input:
 julia> transform!(ntt, "greetings")
 NoThrowResult{Int64}: Transform succeeded
-  ✅ result: 9
+  ✅ result:
+9
 
 # Invalid input:
 julia> transform!(ntt, 92)
@@ -96,8 +97,8 @@ julia> transform!(dag, HuzzahV1(; var="initial_str"))
 
 # output
 NoThrowResult{HuzzahV1}: Transform succeeded
-  ✅ result: HuzzahV1:
- :var  "initial_str_ainitial_str_a_b_c"
+  ✅ result:
+HuzzahV1: (var = "initial_str_ainitial_str_a_b_c",)
 
 # Call DAG on invalid input:
 transform!(dag, HoorayV1(; var1="wrong", var2="input schema"))
