@@ -39,8 +39,8 @@ NoThrowResult(ExampleSchemaAV1(; name="yeehaw"))
 
 # output
 NoThrowResult{ExampleSchemaAV1}: Transform succeeded
-  ✅ result: ExampleSchemaAV1:
- :name  "yeehaw"
+  ✅ result:
+ExampleSchemaAV1: (name = "yeehaw",)
 ```
 ```jldoctest nothrow_ex1
 NoThrowResult(ExampleSchemaAV1(; name="huzzah"); warnings="Hark, watch your step...")
@@ -48,12 +48,12 @@ NoThrowResult(ExampleSchemaAV1(; name="huzzah"); warnings="Hark, watch your step
 # output
 NoThrowResult{ExampleSchemaAV1}: Transform succeeded
   ⚠️  Hark, watch your step...
-  ✅ result: ExampleSchemaAV1:
- :name  "huzzah"
+  ✅ result:
+ExampleSchemaAV1: (name = "huzzah",)
 ```
 ```jldoctest nothrow_ex1
 NoThrowResult(; violations=["Epic fail!", "Slightly less epic fail!"],
-                     warnings=["Uh oh..."])
+                warnings=["Uh oh..."])
 
 # output
 NoThrowResult{Missing}: Transform failed
@@ -103,19 +103,18 @@ result_type(::Type{NoThrowResult{T}}) where {T} = T
 
 function Base.show(io::IO, r::NoThrowResult)
     succeeded = nothrow_succeeded(r)
-    str = "$(typeof(r)): Transform $(succeeded ? "succeeded" : "failed")\n"
+    print(io, "$(typeof(r)): Transform $(succeeded ? "succeeded" : "failed")")
     for v in r.violations
-        str *= "  ❌ $v\n"
+        print(io, "\n  ❌ $v")
     end
     for w in r.warnings
-        str *= "  ⚠️  $w\n"
+        print(io, "\n  ⚠️  $w")
     end
-    if ismissing(r.result)
-        str = chomp(str)
-    else
-        str *= "  ✅ result: $(r.result)"
+    if !ismissing(r.result)
+        println(io, "\n  ✅ result: ")
+        show(io, r.result)
     end
-    return print(io, str)
+    return nothing
 end
 
 """
@@ -184,8 +183,8 @@ transform!(ntt, ExampleSchemaAV1(; in_name="greetings"))
 
 # output
 NoThrowResult{ExampleSchemaBV1}: Transform succeeded
-  ✅ result: ExampleSchemaBV1:
- :out_name  "greetings earthling"
+  ✅ result:
+ExampleSchemaBV1: (out_name = "greetings earthling",)
 ```
 
 ## Example 2: Failing transformation
