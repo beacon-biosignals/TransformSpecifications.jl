@@ -224,8 +224,8 @@ transform!(dag, input)
 
 # output
 NoThrowResult{ExampleOneVarSchemaV1}: Transform succeeded
-  ✅ result: ExampleOneVarSchemaV1:
- :var  "initial_str_ainitial_str_a_b_c"
+  ✅ result:
+ExampleOneVarSchemaV1: (var = "initial_str_ainitial_str_a_b_c",)
 ```
 Similarly, this transform will fail if the input specification is violated---but
 because it returns a [`NoThrowResult`](@ref), it will fail gracefully:
