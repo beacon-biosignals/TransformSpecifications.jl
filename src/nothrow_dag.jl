@@ -415,6 +415,8 @@ Return [`NoThrowResult`](@ref) of sequentially [`transform!`](@ref)ing all
 Before each step, that step's `input_assembler` is called on the results of all
 previous processing steps; this constructor generates input that conforms to the
 step's `input_specification`.
+
+See also: [`transform_force_throw!`](@ref)
 """
 function transform!(dag::NoThrowDAG, input)
     warnings = String[]
@@ -464,11 +466,10 @@ end
 """
     transform_force_throw!(dag::NoThrowDAG, input)
 
-Apply [`transform!`](@ref) on `dag` steps such that the resultant
-output will be of type `output_specification(ntt.transform_spec)` rather than a
-`NoThrowResult`, and any failure _will_ result in throwing an error.
-Utility for debugging `NoThrowTransform`s by consecutively applying `transform!(step, input)`
-on each step, such that the output of each step is a
+Utility for debugging [`NoThrowDAG`](@ref)s by consecutively applying `transform!(step, input)`
+on each step, such that the output of each step is of type
+`output_specification(step.transform_spec)` rather than a `NoThrowResult`, and any
+failure _will_ result in throwing an error.
 """
 function transform_force_throw!(dag::NoThrowDAG, input)
     component_results = OrderedDict{String,Any}()
