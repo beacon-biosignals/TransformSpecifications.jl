@@ -110,10 +110,11 @@ function _mermaid_subgraph_from_dag_step(step::DAGStep)
         content = map(collect(keys(fieldmap))) do fieldname
             type = fieldmap[fieldname]
             node_name = _field_node_name(fieldname, prefix, node_key)
-            node_contents = if type isa Dict{Symbol,Type}
+            node_contents = if type isa Dict{Symbol,<:Type}
                 # Special-case where we're replacing a dict that has been generated
                 # from a different type:
-                fieldstr = replace(nameof(type), "Dict{Symbol, Type}(:" => "", ")" => "",
+                type_str = last(split(string(type), "}(:"; limit=2))
+                fieldstr = replace(type_str, ")" => "",
                                    " => " => "::",
                                    ", :" => ",\n  ")
                 "$(node_name){{\"$fieldname:\n  $fieldstr\"}}"

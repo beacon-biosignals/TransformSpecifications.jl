@@ -17,3 +17,11 @@ end
 module A
 struct X end
 end
+
+function test_equals_reference(test_str::String, ref_path)
+    ref_str = read(ref_path, String)
+    @test isequal(ref_str, test_str)
+    return nothing
+end
+
+update_reference!(test_str, ref_path) = write(ref_path, test_str)
