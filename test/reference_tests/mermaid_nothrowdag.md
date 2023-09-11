@@ -8,7 +8,7 @@ subgraph STEP_A[Step a]
   direction TB
   subgraph STEP_A_InputSchema[Input: SchemaFooV1]
     direction RL
-    STEP_A_InputSchemalist{{"list::Vector{Int64}"}}
+    STEP_A_InputSchemalist{{"list::Array"}}
     class STEP_A_InputSchemalist classSpecField
     STEP_A_InputSchemafoo{{"foo::String"}}
     class STEP_A_InputSchemafoo classSpecField
@@ -26,14 +26,14 @@ subgraph STEP_B[Step b]
   direction TB
   subgraph STEP_B_InputSchema[Input: SchemaFooV1]
     direction RL
-    STEP_B_InputSchemalist{{"list::Vector{Int64}"}}
+    STEP_B_InputSchemalist{{"list::Array"}}
     class STEP_B_InputSchemalist classSpecField
     STEP_B_InputSchemafoo{{"foo::String"}}
     class STEP_B_InputSchemafoo classSpecField
   end
   subgraph STEP_B_OutputSchema[Output: SchemaFooV1]
     direction RL
-    STEP_B_OutputSchemalist{{"list::Vector{Int64}"}}
+    STEP_B_OutputSchemalist{{"list::Array"}}
     class STEP_B_OutputSchemalist classSpecField
     STEP_B_OutputSchemafoo{{"foo::String"}}
     class STEP_B_OutputSchemafoo classSpecField
@@ -51,7 +51,7 @@ subgraph STEP_C[Step c]
   end
   subgraph STEP_C_OutputSchema[Output: SchemaFooV1]
     direction RL
-    STEP_C_OutputSchemalist{{"list::Vector{Int64}"}}
+    STEP_C_OutputSchemalist{{"list::Array"}}
     class STEP_C_OutputSchemalist classSpecField
     STEP_C_OutputSchemafoo{{"foo::String"}}
     class STEP_C_OutputSchemafoo classSpecField

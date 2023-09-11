@@ -9,6 +9,5 @@
 
     using .A: X
     m2 = mermaidify(dag)
-
-    @test_broken isequal(m1, m2)
+    @test isequal(m1, m2)
 end

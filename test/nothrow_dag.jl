@@ -154,12 +154,11 @@ end
                                  "mermaid_nothrowdag.md")
         ref_str = read(ref_test_file, String)
         test_str = ("```mermaid\n$(mermaidify(dag))\n```\n")
+        @test isequal(ref_str, test_str)
 
         # If this test fails because the generated output is intentionally different,
         # update the reference by doing
         # write(ref_test_file, test_str)
-
-        @test isequal(ref_str, test_str)
     end
 end
 
