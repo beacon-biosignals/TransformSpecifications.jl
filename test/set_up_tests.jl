@@ -12,3 +12,8 @@ if !isdefined(TransformSpecifications, :META) # avoids annoying warning if this 
     DocMeta.setdocmeta!(TransformSpecifications, :DocTestSetup,
                         :(using TransformSpecifications); recursive=true)
 end
+
+# For `test/mermaid.jl`
+module A
+struct X end
+end

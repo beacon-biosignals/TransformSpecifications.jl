@@ -149,16 +149,17 @@ end
                                                         input_assembler(d -> d[:invalid_step]["foo"]))
     end
 
-    @testset "`mermaidify" begin
+    @testset "`mermaidify`" begin
         ref_test_file = joinpath(pkgdir(TransformSpecifications), "test", "reference_tests",
                                  "mermaid_nothrowdag.md")
         ref_str = read(ref_test_file, String)
         test_str = ("```mermaid\n$(mermaidify(dag))\n```\n")
-        @test isequal(ref_str, test_str)
 
-        # If the test failed because the generated output is intentionally different,
+        # If this test fails because the generated output is intentionally different,
         # update the reference by doing
         # write(ref_test_file, test_str)
+
+        @test isequal(ref_str, test_str)
     end
 end
 
