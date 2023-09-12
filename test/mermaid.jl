@@ -55,11 +55,16 @@ end
         function TransformSpecifications.field_dict_value(t::Type{SchemaRadV1})
             return TransformSpecifications.field_dict(t)
         end
-        test_str = ("```mermaid\n$(mermaidify(dag))\n```\n")
-        ref_test_file = joinpath(pkgdir(TransformSpecifications), "test",
-                                 "reference_tests",
-                                 "mermaid_custom.md")
-        test_equals_reference(test_str, ref_test_file)
+        try
+            test_str = ("```mermaid\n$(mermaidify(dag))\n```\n")
+            ref_test_file = joinpath(pkgdir(TransformSpecifications), "test",
+                                     "reference_tests",
+                                     "mermaid_custom.md")
+            test_equals_reference(test_str, ref_test_file)
+        finally
+            # Reset definition back to the default to ensure the tests are re-runnable
+            TransformSpecifications.field_dict_value(t::Type{SchemaRadV1}) = t
+        end
         # If this test fails because the generated output is intentionally different,
         # update the reference by doing
         # update_reference!(test_str, ref_test_file)
