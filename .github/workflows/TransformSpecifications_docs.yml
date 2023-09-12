@@ -27,10 +27,6 @@ jobs:
       - uses: julia-actions/setup-julia@latest
         with:
           version: 1.8
-      - uses: julia-actions/add-julia-registry@v1
-        with:
-          key: ${{ secrets.BEACONBUDDY_SSH_KEY }}
-          registry: beacon-biosignals/BeaconRegistry
       - uses: julia-actions/cache@v1
         with:
           cache-name: "${{ github.workflow }}-${{ github.job }}-${{ matrix.runs-on }}"
