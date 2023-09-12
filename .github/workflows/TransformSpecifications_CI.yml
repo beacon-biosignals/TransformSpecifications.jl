@@ -37,19 +37,10 @@ jobs:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
-      # - uses: aws-actions/configure-aws-credentials@v1
-      #   with:
-      #     aws-region: us-east-2
-      #     role-to-assume: arn:aws:iam::185776040155:role/transformspecifications-ci
-      #     role-duration-seconds: 43200
       - uses: julia-actions/setup-julia@v1
         with:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
-      - uses: julia-actions/add-julia-registry@v1
-        with:
-          key: ${{ secrets.BEACONBUDDY_SSH_KEY }}
-          registry: beacon-biosignals/BeaconRegistry
       - uses: julia-actions/cache@v1
         with:
           cache-name: "${{ github.workflow }}-${{ github.job }}-${{ matrix.runs-on }}"
@@ -64,9 +55,3 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: lcov.info
-      # - name: Percy Upload
-      #   uses: percy/exec-action@v0.3.1
-      #   with:
-      #     custom-command: "npx @percy/cli upload ./test/test_images"
-      #   env:
-      #     PERCY_TOKEN: ${{ secrets.PERCY_TRANSFORM_SPECIFICATIONS }}
