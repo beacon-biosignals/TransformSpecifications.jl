@@ -17,6 +17,10 @@ include("set_up_tests.jl")
         include("nothrow_dag.jl")
     end
 
+    @testset "`mermaid`" begin
+        include("mermaid.jl")
+    end
+
     @testset "Doctests" begin
         doctest(TransformSpecifications)
     end

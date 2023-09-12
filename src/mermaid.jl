@@ -4,7 +4,6 @@ This file is exceptionally experimental and likely to change!
 Future features:
 - link schemas to code implementation
 - ditto transform functions
-- add types to schema fields
 - update formatting of different node types
 - link specific i/o fields across steps (use https://mermaid.js.org/syntax/flowchart.html#styling-line-curves)
 - highlight style of overall input/output schema
@@ -111,15 +110,16 @@ function _mermaid_subgraph_from_dag_step(step::DAGStep)
         content = map(collect(keys(fieldmap))) do fieldname
             type = fieldmap[fieldname]
             node_name = _field_node_name(fieldname, prefix, node_key)
-            node_contents = if type isa Dict{Symbol,Type}
+            node_contents = if type isa Dict{Symbol,<:Type}
                 # Special-case where we're replacing a dict that has been generated
                 # from a different type:
-                fieldstr = replace(string(type), "Dict{Symbol, Type}(:" => "", ")" => "",
+                type_str = last(split(string(type), "}(:"; limit=2))
+                fieldstr = replace(type_str, ")" => "",
                                    " => " => "::",
                                    ", :" => ",\n  ")
                 "$(node_name){{\"$fieldname:\n  $fieldstr\"}}"
             else
-                "$(node_name){{\"$fieldname::$type\"}}"
+                "$(node_name){{\"$fieldname::$(nameof(type))\"}}"
             end
             return [node_contents,
                     "class $(node_name) classSpecField"]
@@ -131,7 +131,7 @@ function _mermaid_subgraph_from_dag_step(step::DAGStep)
     inputs_subgraph = let
         prefix = "_InputSchema"
         contents = _schema_subgraph(field_dict(input_specification(process)), prefix)
-        label = string("Input: ", input_specification(process))
+        label = string("Input: ", nameof(input_specification(process)))
         _mermaid_subgraph(node_key * prefix, label; contents, direction="RL")
     end
 
@@ -143,7 +143,7 @@ function _mermaid_subgraph_from_dag_step(step::DAGStep)
         outputs_subgraph = let
             prefix = "_OutputSchema"
             type = result_type(output_specification(process))
-            label = string("Output: ", type)
+            label = string("Output: ", nameof(type))
             contents = _schema_subgraph(field_dict(type), prefix)
             _mermaid_subgraph(node_key * prefix, label; contents, direction="RL")
         end

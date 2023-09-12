@@ -149,14 +149,14 @@ end
                                                         input_assembler(d -> d[:invalid_step]["foo"]))
     end
 
-    @testset "`mermaidify" begin
+    @testset "`mermaidify`" begin
+        test_str = ("```mermaid\n$(mermaidify(dag))\n```\n")
         ref_test_file = joinpath(pkgdir(TransformSpecifications), "test", "reference_tests",
                                  "mermaid_nothrowdag.md")
         ref_str = read(ref_test_file, String)
-        test_str = ("```mermaid\n$(mermaidify(dag))\n```\n")
         @test isequal(ref_str, test_str)
 
-        # If the test failed because the generated output is intentionally different,
+        # If this test fails because the generated output is intentionally different,
         # update the reference by doing
         # write(ref_test_file, test_str)
     end
@@ -184,8 +184,14 @@ end
         # If we _want_ to be able to recurse into a specific specification type,
         # define an overloaded `field_dict_value` implementation of it:
         TransformSpecifications.field_dict_value(t::Type{SchemaFooV1}) = field_dict(t)
-        recursed = field_dict(TestTypeV1)
-        @test recursed == Dict(:schemafoo => Dict(:list => Vector{Int64}, :foo => String),
-                               :str => String)
+        try
+            recursed = field_dict(TestTypeV1)
+            @test recursed ==
+                  Dict(:schemafoo => Dict(:list => Vector{Int64}, :foo => String),
+                       :str => String)
+        finally
+            # Reset to default definition, to ensure the test is re-runnable
+            TransformSpecifications.field_dict_value(t::Type{SchemaFooV1}) = t
+        end
     end
 end
