@@ -183,8 +183,14 @@ end
         # If we _want_ to be able to recurse into a specific specification type,
         # define an overloaded `field_dict_value` implementation of it:
         TransformSpecifications.field_dict_value(t::Type{SchemaFooV1}) = field_dict(t)
-        recursed = field_dict(TestTypeV1)
-        @test recursed == Dict(:schemafoo => Dict(:list => Vector{Int64}, :foo => String),
-                               :str => String)
+        try
+            recursed = field_dict(TestTypeV1)
+            @test recursed ==
+                  Dict(:schemafoo => Dict(:list => Vector{Int64}, :foo => String),
+                       :str => String)
+        finally
+            # Reset to default definition, to ensure the test is re-runnable
+            TransformSpecifications.field_dict_value(t::Type{SchemaFooV1}) = t
+        end
     end
 end
