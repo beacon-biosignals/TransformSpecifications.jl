@@ -153,11 +153,12 @@ end
         test_str = ("```mermaid\n$(mermaidify(dag))\n```\n")
         ref_test_file = joinpath(pkgdir(TransformSpecifications), "test", "reference_tests",
                                  "mermaid_nothrowdag.md")
-        test_equals_reference(test_str, ref_test_file)
+        ref_str = read(ref_test_file, String)
+        @test isequal(ref_str, test_str)
 
         # If this test fails because the generated output is intentionally different,
         # update the reference by doing
-        # update_reference!(test_str, ref_test_file)
+        # write(ref_test_file, test_str)
     end
 end
 
