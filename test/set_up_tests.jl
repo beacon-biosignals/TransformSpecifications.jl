@@ -6,6 +6,7 @@ using TransformSpecifications
 using Logging
 using OrderedCollections
 using Test
+using TransformSpecifications: type_string
 
 # For doctests
 if !isdefined(TransformSpecifications, :META) # avoids annoying warning if this has already been run once

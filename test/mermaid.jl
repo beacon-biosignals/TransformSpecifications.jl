@@ -22,7 +22,7 @@ end # module
 
 @schema "schema-rad" SchemaRad
 @version SchemaRadV1 begin
-    foo::String
+    foo::Union{String,Missing}
     list::Vector{Int}
 end
 
@@ -56,6 +56,7 @@ end
         function TransformSpecifications.field_dict_value(t::Type{SchemaRadV1})
             return TransformSpecifications.field_dict(t)
         end
+        local ref_test_file, test_str
         try
             test_str = ("```mermaid\n$(mermaidify(dag))\n```\n")
             ref_test_file = joinpath(pkgdir(TransformSpecifications), "test",
@@ -70,5 +71,12 @@ end
         # If this test fails because the generated output is intentionally different,
         # update the reference by doing
         # write(ref_test_file, test_str)
+    end
+
+    @testset "type_string" begin
+        @test type_string(fieldtype(SchemaRadV1, 1)) == "Union{Missing, String}"
+        @test type_string(fieldtype(SchemaRadV1, 2)) == "Vector{Int64}"
+        @test type_string(Vector{String}) == "Vector{String}"
+        @test type_string(RobustImportsTest.A.X) == "X"
     end
 end

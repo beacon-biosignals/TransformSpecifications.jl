@@ -119,7 +119,7 @@ function _mermaid_subgraph_from_dag_step(step::DAGStep)
                                    ", :" => ",\n  ")
                 "$(node_name){{\"$fieldname:\n  $fieldstr\"}}"
             else
-                "$(node_name){{\"$fieldname::$(nameof(type))\"}}"
+                "$(node_name){{\"$fieldname::$(type_string(type))\"}}"
             end
             return [node_contents,
                     "class $(node_name) classSpecField"]
@@ -131,7 +131,7 @@ function _mermaid_subgraph_from_dag_step(step::DAGStep)
     inputs_subgraph = let
         prefix = "_InputSchema"
         contents = _schema_subgraph(field_dict(input_specification(process)), prefix)
-        label = string("Input: ", nameof(input_specification(process)))
+        label = string("Input: ", type_string(input_specification(process)))
         _mermaid_subgraph(node_key * prefix, label; contents, direction="RL")
     end
 
@@ -143,7 +143,7 @@ function _mermaid_subgraph_from_dag_step(step::DAGStep)
         outputs_subgraph = let
             prefix = "_OutputSchema"
             type = result_type(output_specification(process))
-            label = string("Output: ", nameof(type))
+            label = string("Output: ", type_string(type))
             contents = _schema_subgraph(field_dict(type), prefix)
             _mermaid_subgraph(node_key * prefix, label; contents, direction="RL")
         end
@@ -156,3 +156,8 @@ function _mermaid_subgraph_from_dag_step(step::DAGStep)
     return _mermaid_subgraph(node_key, uppercasefirst(replace(string(key), "_" => " "));
                              contents, direction="TB")
 end
+
+# https://github.com/beacon-biosignals/TransformSpecifications.jl/issues/25
+# Meant to return a canonical printed representation of the unqualified type name
+# Any output of `fieldtype` is a valid input for this function.
+type_string(t::Type) = sprint(print, t; context=:compact => true)
