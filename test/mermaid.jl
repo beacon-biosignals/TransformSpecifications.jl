@@ -72,4 +72,12 @@ end
         # update the reference by doing
         # write(ref_test_file, test_str)
     end
+
+    @testset "type_string" begin
+        @test type_string(fieldtype(SchemaRadV1, 1)) == "Union{Missing, String}"
+        @test type_string(fieldtype(SchemaRadV1, 2)) == "Vector{Int64}"
+        @test type_string(Vector{String}) == "Vector{String}"
+        @test type_string(RobustImportsTest.A.X) == "X"
+    end
+
 end

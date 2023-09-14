@@ -158,4 +158,6 @@ function _mermaid_subgraph_from_dag_step(step::DAGStep)
 end
 
 # https://github.com/beacon-biosignals/TransformSpecifications.jl/issues/25
+# Meant to return a canonical printed representation of the unqualified type name
+# Any output of `fieldtype` is a valid input for this function.
 type_string(t::Type) = sprint(print, t; context=:compact => true)
