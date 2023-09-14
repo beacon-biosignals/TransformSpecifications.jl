@@ -56,6 +56,7 @@ end
         function TransformSpecifications.field_dict_value(t::Type{SchemaRadV1})
             return TransformSpecifications.field_dict(t)
         end
+        local ref_test_file, test_str
         try
             test_str = ("```mermaid\n$(mermaidify(dag))\n```\n")
             ref_test_file = joinpath(pkgdir(TransformSpecifications), "test",

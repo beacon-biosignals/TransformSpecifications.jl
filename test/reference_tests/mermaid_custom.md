@@ -8,9 +8,9 @@ subgraph STEP_A[Step a]
   direction TB
   subgraph STEP_A_InputSchema[Input: SchemaRadV1]
     direction RL
-    STEP_A_InputSchemalist{{"list::Array"}}
+    STEP_A_InputSchemalist{{"list::Vector{Int64}"}}
     class STEP_A_InputSchemalist classSpecField
-    STEP_A_InputSchemafoo{{"foo::String"}}
+    STEP_A_InputSchemafoo{{"foo::Union{Missing, String}"}}
     class STEP_A_InputSchemafoo classSpecField
   end
   class STEP_A_InputSchema classSpec
@@ -19,16 +19,16 @@ subgraph STEP_B[Step b]
   direction TB
   subgraph STEP_B_InputSchema[Input: SchemaRadV1]
     direction RL
-    STEP_B_InputSchemalist{{"list::Array"}}
+    STEP_B_InputSchemalist{{"list::Vector{Int64}"}}
     class STEP_B_InputSchemalist classSpecField
-    STEP_B_InputSchemafoo{{"foo::String"}}
+    STEP_B_InputSchemafoo{{"foo::Union{Missing, String}"}}
     class STEP_B_InputSchemafoo classSpecField
   end
   subgraph STEP_B_OutputSchema[Output: SchemaYayV1]
     direction RL
     STEP_B_OutputSchemarad{{"rad:
   list::Vector{Int64},
-  foo::String"}}
+  foo::Union{Missing, String}"}}
     class STEP_B_OutputSchemarad classSpecField
   end
   STEP_B_InputSchema:::classSpec -- make_rad --> STEP_B_OutputSchema:::classSpec
