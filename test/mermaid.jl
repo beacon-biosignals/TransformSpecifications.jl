@@ -22,7 +22,7 @@ end # module
 
 @schema "schema-rad" SchemaRad
 @version SchemaRadV1 begin
-    foo::String
+    foo::Union{String,Missing}
     list::Vector{Int}
 end
 
