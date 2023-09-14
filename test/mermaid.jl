@@ -79,5 +79,4 @@ end
         @test type_string(Vector{String}) == "Vector{String}"
         @test type_string(RobustImportsTest.A.X) == "X"
     end
-
 end
