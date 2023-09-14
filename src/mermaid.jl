@@ -158,4 +158,4 @@ function _mermaid_subgraph_from_dag_step(step::DAGStep)
 end
 
 # https://github.com/beacon-biosignals/TransformSpecifications.jl/issues/25
-type_string(t::Type) = sprint(print, t; context=:compact=>true)
+type_string(t::Type) = sprint(print, t; context=:compact => true)
