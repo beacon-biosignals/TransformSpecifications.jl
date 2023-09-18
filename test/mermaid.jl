@@ -22,7 +22,7 @@ end # module
 
 # Used to test that quotes are escaped correctly for mermaid diagram
 struct Duckling
-    x::Val{Symbol("""\"hi1,232}{{}:y;./[]]""")}
+    x::Val{Symbol("""\"hi12,32}{{}:y;./[]]""")}
 end
 
 @schema "schema-rad" SchemaRad

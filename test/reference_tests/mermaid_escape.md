@@ -20,7 +20,7 @@ subgraph STEP_B["Step b"]
   end
   subgraph STEP_B_OutputSchema["Output: Duckling"]
     direction RL
-    STEP_B_OutputSchemax{{"x::Val{Symbol(#quot;\#quot;hi1,232}{{}:y;./[]]#quot;)}"}}
+    STEP_B_OutputSchemax{{"x::Val{Symbol(#quot;\#quot;hi12,32}{{}:y;./[]]#quot;)}"}}
     class STEP_B_OutputSchemax classSpecField
   end
   STEP_B_InputSchema:::classSpec -- func --> STEP_B_OutputSchema:::classSpec

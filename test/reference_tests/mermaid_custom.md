@@ -32,10 +32,10 @@ subgraph STEP_B["Step b"]
     direction RL
     STEP_B_OutputSchemaduck{{"duck::Duckling"}}
     class STEP_B_OutputSchemaduck classSpecField
-    STEP_B_OutputSchemarad{{"rad:
-  list::Vector{Int64},
-  d::Val{Symbol(#quot;\#quot;hi1232}{{}:y;./[]]#quot;},
-  foo::Union{Missing, String}"}}
+    STEP_B_OutputSchemarad{{"`rad
+  *list::Vector{Int64}
+  d::Val{Symbol(#quot;\#quot;hi1232}{{}:y;./[]]#quot;}
+  foo::Union{Missing, String}*`"}}
     class STEP_B_OutputSchemarad classSpecField
   end
   STEP_B_InputSchema:::classSpec -- make_rad --> STEP_B_OutputSchema:::classSpec

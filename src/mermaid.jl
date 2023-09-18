@@ -117,8 +117,8 @@ function _mermaid_subgraph_from_dag_step(step::DAGStep)
                 type_str = last(split(string(type), "}(:"; limit=2))
                 fieldstr = replace(type_str, ")" => "",
                                    " => " => "::",
-                                   ", :" => ",\n  ")
-                "$(node_name){{\"$fieldname:\n  $(mermaid_encode(fieldstr))\"}}"
+                                   ", :" => "\n  ")
+                "$(node_name){{\"`$fieldname\n  *$(mermaid_encode(fieldstr))*`\"}}"
             else
                 "$(node_name){{\"$fieldname::$(mermaid_encode(type_string(type)))\"}}"
             end
