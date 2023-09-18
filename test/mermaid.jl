@@ -80,3 +80,18 @@ end
         @test type_string(RobustImportsTest.A.X) == "X"
     end
 end
+
+@testset "`mermaidify` handles escapes" begin
+    # Verifies NamedTuples show up correctly in rendered diagram
+    dag = NoThrowDAG([DAGStep("step_a", nothing, NoThrowTransform(NamedTuple{(:rad,)}))])
+
+    test_str = ("```mermaid\n$(mermaidify(dag))\n```\n")
+    ref_test_file = joinpath(pkgdir(TransformSpecifications), "test", "reference_tests",
+                             "mermaid_escape.md")
+    ref_str = read(ref_test_file, String)
+    @test isequal(ref_str, test_str)
+
+    # If this test fails because the generated output is intentionally different,
+    # update the reference by doing
+    write(ref_test_file, test_str)
+end
