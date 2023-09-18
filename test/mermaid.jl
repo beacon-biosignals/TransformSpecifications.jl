@@ -20,22 +20,16 @@ end
 end
 end # module
 
-# Used to test that quotes are escaped correctly for mermaid diagram
-struct Duckling
-    x::Val{Symbol("""\"hi12,32}{{}:y;./[]]""")}
-end
-
 @schema "schema-rad" SchemaRad
 @version SchemaRadV1 begin
     foo::Union{String,Missing}
     list::Vector{Int}
-    d::Val{Symbol("""\"hi1232}{{}:y;./[]]""")}
+    d::Val{Symbol("""\"hi1232}{{}:yj,;./[]]""")}
 end
 
 @schema "schema-yay" SchemaYay
 @version SchemaYayV1 begin
     rad::SchemaRadV1
-    duck::Duckling
 end
 
 @testset "`mermaidify` handles Legolas schemas" begin
@@ -90,6 +84,11 @@ end
 
 @testset "`mermaidify` handles escapes" begin
     # Verifies types that are known to require string-escaping in order to render correctly
+
+    # Used to test that quotes are escaped correctly for mermaid diagram
+    struct Duckling
+        x::Val{Symbol("""\"hi12,32}{{}:y;./[]]""")}
+    end
 
     # obviously this function doesn't yield a _valid_ dag, but as far as
     # mermaid is concerned, it doesn't have to be valid

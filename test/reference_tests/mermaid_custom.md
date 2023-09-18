@@ -10,7 +10,7 @@ subgraph STEP_A["Step a"]
     direction RL
     STEP_A_InputSchemalist{{"list::Vector{Int64}"}}
     class STEP_A_InputSchemalist classSpecField
-    STEP_A_InputSchemad{{"d::Val{Symbol(#quot;\#quot;hi1232}{{}:y;./[]]#quot;)}"}}
+    STEP_A_InputSchemad{{"d::Val{Symbol(#quot;\#quot;hi1232}{{}:yj,;./[]]#quot;)}"}}
     class STEP_A_InputSchemad classSpecField
     STEP_A_InputSchemafoo{{"foo::Union{Missing, String}"}}
     class STEP_A_InputSchemafoo classSpecField
@@ -23,18 +23,16 @@ subgraph STEP_B["Step b"]
     direction RL
     STEP_B_InputSchemalist{{"list::Vector{Int64}"}}
     class STEP_B_InputSchemalist classSpecField
-    STEP_B_InputSchemad{{"d::Val{Symbol(#quot;\#quot;hi1232}{{}:y;./[]]#quot;)}"}}
+    STEP_B_InputSchemad{{"d::Val{Symbol(#quot;\#quot;hi1232}{{}:yj,;./[]]#quot;)}"}}
     class STEP_B_InputSchemad classSpecField
     STEP_B_InputSchemafoo{{"foo::Union{Missing, String}"}}
     class STEP_B_InputSchemafoo classSpecField
   end
   subgraph STEP_B_OutputSchema["Output: SchemaYayV1"]
     direction RL
-    STEP_B_OutputSchemaduck{{"duck::Duckling"}}
-    class STEP_B_OutputSchemaduck classSpecField
     STEP_B_OutputSchemarad{{"`rad
   *list::Vector{Int64}
-  d::Val{Symbol(#quot;\#quot;hi1232}{{}:y;./[]]#quot;}
+  d::Val{Symbol(#quot;\#quot;hi1232}{{}:yj,;./[]]#quot;}
   foo::Union{Missing, String}*`"}}
     class STEP_B_OutputSchemarad classSpecField
   end
