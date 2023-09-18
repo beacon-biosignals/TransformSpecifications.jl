@@ -4,9 +4,9 @@ flowchart
 %% Define steps (nodes)
 subgraph OUTERLEVEL["` `"]
 direction LR
-subgraph STEP_A[Step a]
+subgraph STEP_A["Step a"]
   direction TB
-  subgraph STEP_A_InputSchema[Input: NamedTuple{(:rad,)}]
+  subgraph STEP_A_InputSchema["Input: NamedTuple{(:rad,)}"]
     direction RL
     STEP_A_InputSchemarad{{"rad::Any"}}
     class STEP_A_InputSchemarad classSpecField

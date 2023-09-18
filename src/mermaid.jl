@@ -93,7 +93,7 @@ _field_node_name(field, prefix, step_key) = string(_mermaid_key(step_key), prefi
 
 function _mermaid_subgraph(node_key::String, display_name::String=node_key;
                            contents::Vector{String}=String[], direction="RL")
-    return ["subgraph $(node_key)[$(display_name)]",
+    return ["subgraph $(node_key)[\"$(display_name)\"]",
             "  direction $direction",
             map(_ltab_spaces, contents)...,
             "end"]
