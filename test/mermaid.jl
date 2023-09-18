@@ -82,8 +82,10 @@ end
 end
 
 @testset "`mermaidify` handles escapes" begin
-    # Verifies NamedTuples show up correctly in rendered diagram
-    dag = NoThrowDAG([DAGStep("step_a", nothing, NoThrowTransform(NamedTuple{(:rad,)}))])
+    # Verifies types that are known to require string-escaping show up correctly
+    # in rendered diagram
+
+    dag = NoThrowDAG([DAGStep("nt_step", nothing, NoThrowTransform(NamedTuple{(:rad,)})),])
 
     test_str = ("```mermaid\n$(mermaidify(dag))\n```\n")
     ref_test_file = joinpath(pkgdir(TransformSpecifications), "test", "reference_tests",
