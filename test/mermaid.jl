@@ -20,15 +20,22 @@ end
 end
 end # module
 
+# Used to test that quotes are escaped correctly for mermaid diagram
+struct Duckling
+    x::Val{Symbol("""\"hi1,232}{{}:y;./[]]""")}
+end
+
 @schema "schema-rad" SchemaRad
 @version SchemaRadV1 begin
     foo::Union{String,Missing}
     list::Vector{Int}
+    d::Val{Symbol("""\"hi1232}{{}:y;./[]]""")}
 end
 
 @schema "schema-yay" SchemaYay
 @version SchemaYayV1 begin
     rad::SchemaRadV1
+    duck::Duckling
 end
 
 @testset "`mermaidify` handles Legolas schemas" begin
@@ -82,10 +89,14 @@ end
 end
 
 @testset "`mermaidify` handles escapes" begin
-    # Verifies types that are known to require string-escaping show up correctly
-    # in rendered diagram
+    # Verifies types that are known to require string-escaping in order to render correctly
 
-    dag = NoThrowDAG([DAGStep("nt_step", nothing, NoThrowTransform(NamedTuple{(:rad,)})),])
+    # obviously this function doesn't yield a _valid_ dag, but as far as
+    # mermaid is concerned, it doesn't have to be valid
+    func(x) = x
+    steps = [DAGStep("step_a", nothing, NoThrowTransform(NamedTuple{(:rad,)})),
+             DAGStep("step_b", nothing, NoThrowTransform(Nothing, Duckling, func))]
+    dag = NoThrowDAG(steps)
 
     test_str = ("```mermaid\n$(mermaidify(dag))\n```\n")
     ref_test_file = joinpath(pkgdir(TransformSpecifications), "test", "reference_tests",
