@@ -4,16 +4,16 @@ flowchart
 %% Define steps (nodes)
 subgraph OUTERLEVEL["` `"]
 direction LR
-subgraph STEP_A[Step a]
+subgraph STEP_A["Step a"]
   direction TB
-  subgraph STEP_A_InputSchema[Input: SchemaFooV1]
+  subgraph STEP_A_InputSchema["Input: SchemaFooV1"]
     direction RL
     STEP_A_InputSchemalist{{"list::Vector{Int64}"}}
     class STEP_A_InputSchemalist classSpecField
     STEP_A_InputSchemafoo{{"foo::String"}}
     class STEP_A_InputSchemafoo classSpecField
   end
-  subgraph STEP_A_OutputSchema[Output: SchemaBarV1]
+  subgraph STEP_A_OutputSchema["Output: SchemaBarV1"]
     direction RL
     STEP_A_OutputSchemavar1{{"var1::String"}}
     class STEP_A_OutputSchemavar1 classSpecField
@@ -22,16 +22,16 @@ subgraph STEP_A[Step a]
   end
   STEP_A_InputSchema:::classSpec -- fn_step_a --> STEP_A_OutputSchema:::classSpec
 end
-subgraph STEP_B[Step b]
+subgraph STEP_B["Step b"]
   direction TB
-  subgraph STEP_B_InputSchema[Input: SchemaFooV1]
+  subgraph STEP_B_InputSchema["Input: SchemaFooV1"]
     direction RL
     STEP_B_InputSchemalist{{"list::Vector{Int64}"}}
     class STEP_B_InputSchemalist classSpecField
     STEP_B_InputSchemafoo{{"foo::String"}}
     class STEP_B_InputSchemafoo classSpecField
   end
-  subgraph STEP_B_OutputSchema[Output: SchemaFooV1]
+  subgraph STEP_B_OutputSchema["Output: SchemaFooV1"]
     direction RL
     STEP_B_OutputSchemalist{{"list::Vector{Int64}"}}
     class STEP_B_OutputSchemalist classSpecField
@@ -40,16 +40,16 @@ subgraph STEP_B[Step b]
   end
   STEP_B_InputSchema:::classSpec -- fn_step_b --> STEP_B_OutputSchema:::classSpec
 end
-subgraph STEP_C[Step c]
+subgraph STEP_C["Step c"]
   direction TB
-  subgraph STEP_C_InputSchema[Input: SchemaBarV1]
+  subgraph STEP_C_InputSchema["Input: SchemaBarV1"]
     direction RL
     STEP_C_InputSchemavar1{{"var1::String"}}
     class STEP_C_InputSchemavar1 classSpecField
     STEP_C_InputSchemavar2{{"var2::String"}}
     class STEP_C_InputSchemavar2 classSpecField
   end
-  subgraph STEP_C_OutputSchema[Output: SchemaFooV1]
+  subgraph STEP_C_OutputSchema["Output: SchemaFooV1"]
     direction RL
     STEP_C_OutputSchemalist{{"list::Vector{Int64}"}}
     class STEP_C_OutputSchemalist classSpecField

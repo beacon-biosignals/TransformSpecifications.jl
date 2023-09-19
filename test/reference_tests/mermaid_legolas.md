@@ -4,27 +4,31 @@ flowchart
 %% Define steps (nodes)
 subgraph OUTERLEVEL["` `"]
 direction LR
-subgraph STEP_A[Step a]
+subgraph STEP_A["Step a"]
   direction TB
-  subgraph STEP_A_InputSchema[Input: SchemaRadV1]
+  subgraph STEP_A_InputSchema["Input: SchemaRadV1"]
     direction RL
     STEP_A_InputSchemalist{{"list::Vector{Int64}"}}
     class STEP_A_InputSchemalist classSpecField
+    STEP_A_InputSchemad{{"d::Val{Symbol(#quot;\#quot;hi1232}{{}:yj,;./[]]#quot;)}"}}
+    class STEP_A_InputSchemad classSpecField
     STEP_A_InputSchemafoo{{"foo::Union{Missing, String}"}}
     class STEP_A_InputSchemafoo classSpecField
   end
   class STEP_A_InputSchema classSpec
 end
-subgraph STEP_B[Step b]
+subgraph STEP_B["Step b"]
   direction TB
-  subgraph STEP_B_InputSchema[Input: SchemaRadV1]
+  subgraph STEP_B_InputSchema["Input: SchemaRadV1"]
     direction RL
     STEP_B_InputSchemalist{{"list::Vector{Int64}"}}
     class STEP_B_InputSchemalist classSpecField
+    STEP_B_InputSchemad{{"d::Val{Symbol(#quot;\#quot;hi1232}{{}:yj,;./[]]#quot;)}"}}
+    class STEP_B_InputSchemad classSpecField
     STEP_B_InputSchemafoo{{"foo::Union{Missing, String}"}}
     class STEP_B_InputSchemafoo classSpecField
   end
-  subgraph STEP_B_OutputSchema[Output: SchemaYayV1]
+  subgraph STEP_B_OutputSchema["Output: SchemaYayV1"]
     direction RL
     STEP_B_OutputSchemarad{{"rad::SchemaRadV1"}}
     class STEP_B_OutputSchemarad classSpecField

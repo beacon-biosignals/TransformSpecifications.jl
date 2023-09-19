@@ -90,10 +90,11 @@ end
 _ltab_spaces(str; n::Int=2) = repeat(" ", n) * str
 _mermaid_key(key) = uppercase(string(key))
 _field_node_name(field, prefix, step_key) = string(_mermaid_key(step_key), prefix, field)
+mermaid_encode(str) = replace(str, "\"" => "#quot;")
 
 function _mermaid_subgraph(node_key::String, display_name::String=node_key;
                            contents::Vector{String}=String[], direction="RL")
-    return ["subgraph $(node_key)[$(display_name)]",
+    return ["subgraph $(node_key)[\"$(mermaid_encode(display_name))\"]",
             "  direction $direction",
             map(_ltab_spaces, contents)...,
             "end"]
@@ -116,10 +117,10 @@ function _mermaid_subgraph_from_dag_step(step::DAGStep)
                 type_str = last(split(string(type), "}(:"; limit=2))
                 fieldstr = replace(type_str, ")" => "",
                                    " => " => "::",
-                                   ", :" => ",\n  ")
-                "$(node_name){{\"$fieldname:\n  $fieldstr\"}}"
+                                   ", :" => "\n  ")
+                "$(node_name){{\"`$fieldname\n  *$(mermaid_encode(fieldstr))*`\"}}"
             else
-                "$(node_name){{\"$fieldname::$(type_string(type))\"}}"
+                "$(node_name){{\"$fieldname::$(mermaid_encode(type_string(type)))\"}}"
             end
             return [node_contents,
                     "class $(node_name) classSpecField"]

@@ -24,6 +24,7 @@ end # module
 @version SchemaRadV1 begin
     foo::Union{String,Missing}
     list::Vector{Int}
+    d::Val{Symbol("""\"hi1232}{{}:yj,;./[]]""")}
 end
 
 @schema "schema-yay" SchemaYay
@@ -79,4 +80,30 @@ end
         @test type_string(Vector{String}) == "Vector{String}"
         @test type_string(RobustImportsTest.A.X) == "X"
     end
+end
+
+@testset "`mermaidify` handles escapes" begin
+    # Verifies types that are known to require string-escaping in order to render correctly
+
+    # Used to test that quotes are escaped correctly for mermaid diagram
+    struct Duckling
+        x::Val{Symbol("""\"hi12,32}{{}:y;./[]]""")}
+    end
+
+    # obviously this function doesn't yield a _valid_ dag, but as far as
+    # mermaid is concerned, it doesn't have to be valid
+    func(x) = x
+    steps = [DAGStep("step_a", nothing, NoThrowTransform(NamedTuple{(:rad,)})),
+             DAGStep("step_b", nothing, NoThrowTransform(Nothing, Duckling, func))]
+    dag = NoThrowDAG(steps)
+
+    test_str = ("```mermaid\n$(mermaidify(dag))\n```\n")
+    ref_test_file = joinpath(pkgdir(TransformSpecifications), "test", "reference_tests",
+                             "mermaid_escape.md")
+    ref_str = read(ref_test_file, String)
+    @test isequal(ref_str, test_str)
+
+    # If this test fails because the generated output is intentionally different,
+    # update the reference by doing
+    # write(ref_test_file, test_str)
 end
