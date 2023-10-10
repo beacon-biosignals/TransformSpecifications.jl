@@ -206,16 +206,23 @@ end
     end
 
     @testset "Nonconforming transform fails" begin
-        input_record = SchemaAV1(; foo="rabbit")
-        err = ErrorException("Oh no, an unexpected exception---if only we'd checked for it and returned a NoThrowResult{Missing} instead!")
-        ntt_unexpected_throw = NoThrowTransform(SchemaAV1, SchemaBV1,
-                                                _ -> throw(err))
-        result = transform!(ntt_unexpected_throw, input_record)
-        @test !nothrow_succeeded(result)
-        @test isequal(only(result.violations),
-                      "Unexpected violation. Details: $err")
-        @test_throws ErrorException transform_force_throw!(ntt_unexpected_throw,
-                                                           input_record)
+        for verbose_violations in (true, false)
+            input_record = SchemaAV1(; foo="rabbit")
+            err = ErrorException("Oh no, an unexpected exception---if only we'd checked for it and returned a NoThrowResult{Missing} instead!")
+            ntt_unexpected_throw = NoThrowTransform(SchemaAV1, SchemaBV1,
+                                                    _ -> throw(err))
+            err = ErrorException("Oh no, an unexpected exception---if only we'd checked for it and returned a NoThrowResult{Missing} instead!")
+            result = transform!(ntt_unexpected_throw, input_record; verbose_violations)
+            @test !nothrow_succeeded(result)
+            @test contains(only(result.violations), "Unexpected violation. Details:")
+            @test contains(only(result.violations), err.msg)
+            if verbose_violations
+                # Check we are printing the exception stack
+                @test contains(only(result.violations), "ExceptionStack")
+            end
+            @test_throws ErrorException transform_force_throw!(ntt_unexpected_throw,
+                                                               input_record)
+        end
     end
 
     @testset "Nonconforming output fails" begin

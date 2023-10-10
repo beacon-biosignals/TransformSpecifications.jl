@@ -131,15 +131,24 @@ end
     end
 
     @testset "Nonconforming input fails" begin
-        result = transform!(dag, SchemaBarV1(; var1="yay", var2="whee"))
-        @test !nothrow_succeeded(result)
-        err_str = "Input to step `step_a` doesn't conform to specification `SchemaFooV1`. \
-                   Details: ArgumentError(\"Invalid value set for field `foo`, expected String, \
-                   got a value of type Missing (missing)\")"
-        @test isequal(err_str, only(result.violations))
+        for verbose_violations in (true, false)
+            result = transform!(dag, SchemaBarV1(; var1="yay", var2="whee");
+                                verbose_violations)
+            @test !nothrow_succeeded(result)
+            err_str = "Input to step `step_a` doesn't conform to specification `SchemaFooV1`"
 
-        err = ArgumentError("Input to step `step_a` doesn't conform to specification `SchemaFooV1`")
-        @test_throws err transform_force_throw!(dag, SchemaBarV1(; var1="yay", var2="whee"))
+            @test startswith(only(result.violations), err_str)
+            @test contains(only(result.violations),
+                           "Invalid value set for field `foo`, expected String, got a value of type Missing (missing)")
+
+            if verbose_violations
+                # Check we are printing the exception stack
+                @test contains(only(result.violations), "ExceptionStack")
+            end
+            err = ArgumentError(err_str)
+            @test_throws err transform_force_throw!(dag,
+                                                    SchemaBarV1(; var1="yay", var2="whee"))
+        end
     end
 
     @testset "`_validate_input_assembler`" begin

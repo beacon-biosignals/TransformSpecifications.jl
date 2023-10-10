@@ -235,7 +235,7 @@ function output_specification(ntt::NoThrowTransform)
 end
 
 """
-    transform!(ntt::NoThrowTransform, input)
+    transform!(ntt::NoThrowTransform, input; verbose_violations=false)
 
 Return [`NoThrowResult`](@ref) of applying `ntt.transform_spec.transform_fn` to `input`. Transform
 will fail (i.e., return a `NoThrowResult{Missing}` if:
@@ -248,6 +248,8 @@ will fail (i.e., return a `NoThrowResult{Missing}` if:
 In any of these failure cases, this function will not throw, but instead will return
 the cause of failure in the output `violations` field.
 
+If `verbose_violations=true`, then much more verbose violation strings will be generated in the case of unexpected violations (including full stacktraces).
+
 !!! note
   For debugging purposes, it may be helpful to bypass the "no-throw" feature and
   so as to have access to a callstack. To do this, use [`transform_force_throw!`](@ref)
@@ -255,21 +257,29 @@ the cause of failure in the output `violations` field.
 
 See also: [`convert_spec`](@ref)
 """
-function transform!(ntt::NoThrowTransform, input)
+function transform!(ntt::NoThrowTransform, input; verbose_violations=false)
     # Check that input meets specification
     InSpec = input_specification(ntt)
     input = try
         convert_spec(InSpec, input)
     catch e
-        violations = "Input doesn't conform to specification `$(InSpec)`. Details: $e"
+        if verbose_violations
+            stack = Base.current_exceptions()
+            str = sprint(show, MIME"text/plain"(), stack)
+        else
+            str = string(e)
+        end
+        violations = "Input doesn't conform to specification `$(InSpec)`. Details: $str"
         return NoThrowResult(; violations)
     end
 
     # Do transformation
     result = try
         NoThrowResult(ntt.transform_spec.transform_fn(input))
-    catch e
-        return NoThrowResult(; violations="Unexpected violation. Details: $e")
+    catch
+        stack = Base.current_exceptions()
+        str = sprint(show, MIME"text/plain"(), stack)
+        return NoThrowResult(; violations="Unexpected violation. Details: $str")
     end
 
     # ...wrap it in a nothrow, so that any nested nothrows are correctly collapsed
