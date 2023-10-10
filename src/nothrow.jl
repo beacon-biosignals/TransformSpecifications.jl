@@ -264,7 +264,7 @@ function transform!(ntt::NoThrowTransform, input; verbose_violations=false)
         convert_spec(InSpec, input)
     catch e
         if verbose_violations
-            stack = Base.current_exceptions()
+            stack = current_exceptions()
             str = sprint(show, MIME"text/plain"(), stack)
         else
             str = string(e)
@@ -277,7 +277,7 @@ function transform!(ntt::NoThrowTransform, input; verbose_violations=false)
     result = try
         NoThrowResult(ntt.transform_spec.transform_fn(input))
     catch
-        stack = Base.current_exceptions()
+        stack = current_exceptions()
         str = sprint(show, MIME"text/plain"(), stack)
         return NoThrowResult(; violations="Unexpected violation. Details: $str")
     end
