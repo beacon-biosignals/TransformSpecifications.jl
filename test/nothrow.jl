@@ -219,6 +219,9 @@ end
             if verbose_violations
                 # Check we are printing the exception stack
                 @test contains(only(result.violations), "ExceptionStack")
+            else
+                # In this case we should *not* be printing the exception stack
+                @test !contains(only(result.violations), "ExceptionStack")
             end
             @test_throws ErrorException transform_force_throw!(ntt_unexpected_throw,
                                                                input_record)

@@ -276,9 +276,13 @@ function transform!(ntt::NoThrowTransform, input; verbose_violations=false)
     # Do transformation
     result = try
         NoThrowResult(ntt.transform_spec.transform_fn(input))
-    catch
-        stack = current_exceptions()
-        str = sprint(show, MIME"text/plain"(), stack)
+    catch e
+        if verbose_violations
+            stack = current_exceptions()
+            str = sprint(show, MIME"text/plain"(), stack)
+        else
+            str = string(e)
+        end
         return NoThrowResult(; violations="Unexpected violation. Details: $str")
     end
 
