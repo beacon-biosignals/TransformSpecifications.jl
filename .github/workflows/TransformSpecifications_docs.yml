@@ -27,7 +27,7 @@ jobs:
       - uses: julia-actions/setup-julia@latest
         with:
           version: 1.8
-      - uses: julia-actions/cache@v1
+      - uses: julia-actions/cache@v2
         with:
           cache-name: "${{ github.workflow }}-${{ github.job }}-${{ matrix.runs-on }}"
           cache-compiled: true
