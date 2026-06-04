@@ -8,10 +8,12 @@ Legolas = "741b9549-f6ed-4911-9fbf-4a1c0c97f0cd"
 OrderedCollections = "bac558e1-5e72-5ebc-8fee-abe8a469f55d"
 
 [compat]
-Aqua = "0.6"
+Aqua = "0.6, 0.8"
 Documenter = "0.27"
 Legolas = "0.5.12"
+Logging = "1"
 OrderedCollections = "1.6"
+Test = "1"
 julia = "1.7.2"
 
 [extras]
